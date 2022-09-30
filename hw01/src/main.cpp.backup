@@ -1,0 +1,177 @@
+#include <stdio.h>
+#include <iostream>
+#include <cstdlib>
+#include <string.h>
+#include <mpi.h>
+#include "utils.h"
+
+
+int main(int argc, char* argv[]) {
+    // mpi initialize
+    MPI_Init(NULL, NULL);
+
+    // fetch size and rank
+    int size, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // initializiation, N = 10 default
+    int N = 10;
+    // parse argument
+    char buff[100];
+    for (int i = 0; i < argc; i++){
+        strcpy(buff, argv[i]);
+        if (strcmp(buff, "-n")==0){
+            std::string num(argv[i+1]);
+            N = std::stoi(num);
+        }
+    }
+
+
+    // main program
+    // master proc
+    if (rank==0){
+        // array allocation
+        printf("Set N to %d.\n", N);
+        int *arr = (int *) malloc(sizeof(int) * N);
+        fill_rand_arr(arr, N);
+        print_arr(arr, N);
+
+        // sequential if size == 1
+        if (size==1){
+            odd_even_sort(arr, N, 0);
+        }
+
+        // parallel if size > 1
+        else { 
+        // send initial data
+        int jobsize = N / size;
+        for (int i = 1; i < size; i++){
+            // determine start and end array index
+            int start_idx = i * jobsize;
+            int end_idx   = start_idx + jobsize;
+            if (i == size-1) end_idx = N;
+            // send data
+            MPI_Send(arr+start_idx, end_idx-start_idx, MPI_INT, i, 0, MPI_COMM_WORLD);
+        }
+        // SYNC 1: initialization
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // main loop
+        int from, to;
+        int finish = 1;
+        while (true) {
+            // STEP 1: sequential sort within the group
+            odd_even_sort(arr, jobsize, 0);
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            // STEP 2: odd-1  <-- odd
+            MPI_Recv(&from, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if (from < arr[jobsize]) {
+                to = arr[jobsize];
+                arr[jobsize] = from;
+            }
+            MPI_Send(&to, 1, MPI_INT, 1, 1, MPI_COMM_WORLD);
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            // STEP 3: even-1 <-- even
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            // SYNC 2: sync before next iteration 
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            break;
+        }
+
+        }
+
+        // ending stage
+        // print result
+        print_arr(arr, N);
+
+        // free 
+        free(arr);
+    }
+    // slave proc
+    else {
+        // specify indicies
+        int start_idx = 0;
+        int end_idx   = N / size;
+        if (rank == size-1) end_idx = end_idx + N%size;
+        // allocate memory
+        int* arr_ = (int *)malloc(sizeof(int) * end_idx);
+        // receive initial data
+        MPI_Recv(arr_, end_idx, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        print_arr(arr_, end_idx);
+        // SYNC 1: initialization
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // main loop
+        int from, to;
+        int finish = 1;
+        while (true) {
+            // STEP 1: sequential sort within the group
+            odd_even_sort(arr_, end_idx, 0);
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            // STEP 2: odd-1  <-- odd
+            // if odd
+            if (rank%2==1) {
+                MPI_Send(arr_, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD);
+                MPI_Recv(&from, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (from > arr_[0]) {
+                    arr_[0] = from;
+                    odd_even_sort(arr_, end_idx, 0);
+                    finish = 0;
+                }
+            }
+            // if even
+            else if (rank < size-1) {
+                MPI_Recv(&from, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (from < arr_[end_idx]) {
+                    to = arr_[end_idx];
+                    arr_[end_idx] = from;
+                    odd_even_sort(arr_, end_idx, 0);
+                } else to = from;
+                MPI_Send(&to, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD);
+                finish = 0;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            // STEP 3: even-1 <-- even
+            // if even
+            if (rank%2==0) {
+                MPI_Send(arr_, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD);
+                MPI_Recv(&from, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (from > arr_[0]) odd_even_sort(arr_, end_idx, 0);
+            }
+            // if odd
+            else if (rank < size-1) {
+                MPI_Recv(&from, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (from > arr_[0]) {
+                    to = arr_[0];
+                    arr_[0] = from;
+                    odd_even_sort(arr_, end_idx, 0);
+                } else to = from;
+                MPI_Send(&to, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD);
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            // SYNC 2: sync before next iteration 
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            break;
+        }
+
+        // final state
+        free(arr_);
+    }
+
+
+    // mpi finalize
+    MPI_Finalize();
+
+
+    return 0;
+}
+
+

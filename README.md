@@ -21,4 +21,15 @@ sacct
 sinfo -a
 ```
 
+## CMake Notes
+
+```
+# configure in build folder
+cmake -B build
+# build
+cmake --build build
+```
+
+
+
 

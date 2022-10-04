@@ -5,6 +5,7 @@
 
 // fill random array
 void fill_rand_arr(int* arr, int N){
+    std::srand(time(0));
     for (int i = 0; i < N; i++){
         arr[i] = std::rand() % 10000;
     }

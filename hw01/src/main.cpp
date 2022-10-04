@@ -49,6 +49,9 @@ int main(int argc, char* argv[]) {
 
     // master proc array allocation
     if (rank==0){
+        printf("Name: Haoran Sun\n");
+        printf("ID:   119010271\n");
+        printf("HW:   Parallel Odd-Even Sort\n");
         printf("Set N to %d.\n", N);
         arr_ = (int *) malloc(sizeof(int) * N);
         fill_rand_arr(arr_, N);
@@ -86,61 +89,6 @@ int main(int argc, char* argv[]) {
         // STEP 2: main program
         while (true){
             flag = 1;
-
-            // // STEP 2.1: local sequential sort
-            // min_max(arr, end_idx-start_idx);
-
-            // // STEP 2.2: odd-1  <-- odd
-            // if (rank%2==1) {
-            //     MPI_Send(arr, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD);
-            //     MPI_Recv(&from, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            //     if (from > arr[0]) {
-            //         // printf("Exchange rank %d\n", rank);
-            //         arr[0] = from;
-            //         // odd_even_sort(arr, end_idx-start_idx, 0);
-            //         min_max(arr, end_idx-start_idx);
-            //         flag = 0;
-            //     }
-            // }
-            // else if (rank < size-1) {
-            //     to = arr[end_idx-start_idx-1];
-            //     MPI_Recv(&from, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            //     if (from < arr[end_idx-start_idx-1]){
-            //         to = arr[end_idx-start_idx-1];
-            //         arr[end_idx-start_idx-1] = from;
-            //         // odd_even_sort(arr, end_idx-start_idx, 0);
-            //         min_max(arr, end_idx-start_idx);
-            //         flag = 0;
-            //     }
-            //     MPI_Send(&to, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD);
-            // }
-            // MPI_Barrier(MPI_COMM_WORLD);
-
-            // // STEP 2.2: even-1 <-- even
-            // if (rank%2==0 && rank>0) {
-            //     MPI_Send(arr, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD);
-            //     MPI_Recv(&from, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            //     if (from > arr[0]) {
-            //         // printf("Exchange rank %d\n", rank);
-            //         arr[0] = from;
-            //         // odd_even_sort(arr, end_idx-start_idx, 0);
-            //         min_max(arr, end_idx-start_idx);
-            //         flag = 0;
-            //     }
-            // }
-            // else if (rank%2==1 && rank<size-1) {
-            //     to = arr[end_idx-start_idx-1];
-            //     MPI_Recv(&from, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            //     if (from < arr[end_idx-start_idx-1]){
-            //         to = arr[end_idx-start_idx-1];
-            //         arr[end_idx-start_idx-1] = from;
-            //         // odd_even_sort(arr, end_idx-start_idx, 0);
-            //         min_max(arr, end_idx-start_idx);
-            //         flag = 0;
-            //     }
-            //     MPI_Send(&to, 1, MPI_INT, rank+1, 1, MPI_COMM_WORLD);
-            // }
-            // MPI_Barrier(MPI_COMM_WORLD);
 
             int a, b;
             int from, to;
@@ -270,8 +218,8 @@ int main(int argc, char* argv[]) {
     MPI_Gather(&t, 1, MPI_DOUBLE, time_arr, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     if (rank==0) {
         t_sum = arr_sum(time_arr, size);
-        printf("Execution time: %.2fs, overall time: %.2fs\n", t, t_sum);
-        check_sorted(arr_, N);
+        printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t_sum, size);
+        // check_sorted(arr_, N);
     }
 
 
@@ -285,10 +233,12 @@ int main(int argc, char* argv[]) {
     // print info to file
     if (rank==0 && save==1) {
         FILE* outfile;
-        outfile = fopen("data.txt", "a");
+        if (size==1) outfile = fopen("data_seq.txt", "a");
+        else  outfile = fopen("data.txt", "a");
         fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, size, t, t_sum);
         fclose(outfile);
     }
+    // this line is added to make sure that the data is correctly saved
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     return 0;

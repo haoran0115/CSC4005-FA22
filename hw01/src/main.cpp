@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
     // fetch size and rank
     int size, rank;
     int save = 0;
+    int print = 0;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     // initializiation, N = 10 default
@@ -31,6 +32,10 @@ int main(int argc, char* argv[]) {
         if (strcmp(buff, "--save")==0){
             std::string num(argv[i+1]);
             save = std::stoi(num);
+        }
+        if (strcmp(buff, "--print")==0){
+            std::string num(argv[i+1]);
+            print = std::stoi(num);
         }
     }
 
@@ -55,7 +60,10 @@ int main(int argc, char* argv[]) {
         printf("Set N to %d.\n", N);
         arr_ = (int *) malloc(sizeof(int) * N);
         fill_rand_arr(arr_, N);
-        // print_arr(arr_, N);
+        if (print==1) {
+            printf("Array:\n");
+            print_arr(arr_, N);
+        }
     }
     arr = (int *) malloc(sizeof(int) * (end_idx-start_idx));
 
@@ -223,8 +231,11 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // // master print result
-    // if (rank==0) print_arr(arr_, jobsize);
+    // master print result
+    if (rank==0 && print==1) {
+        printf("Sorted array:\n");
+        print_arr(arr_, N);
+    }
 
     // free array 
     free(arr);

@@ -57,11 +57,12 @@ int main(int argc, char* argv[]) {
     free(arr);
 
     // print data info to file
-    FILE* outfile;
-    if (size==1) outfile = fopen("data_seq.txt", "a");
-    else  outfile = fopen("data.txt", "a");
-    fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, size, t, t);
-    fclose(outfile);
+    if (save==1) {
+        FILE* outfile;
+        outfile = fopen("data_seq.txt", "a");
+        fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, size, t, t);
+        fclose(outfile);
+    }
 
     // this line is added to make sure that the data is correctly saved
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

@@ -1,2 +1,5 @@
-*/build
-*/slurm-*.out
+build
+slurm-*.out
+*.synctex.gz
+*.xdv
+.ipynb_checkpoints

@@ -38,5 +38,11 @@
         "utility": "cpp",
         "typeinfo": "cpp",
         "thread": "cpp"
-    }
+    },
+    "grammarly.selectors": [
+        {
+            "language": "latex",
+            "scheme": "file"
+        }
+    ]
 }

@@ -166,8 +166,8 @@
 }    
 \lstdefinestyle{cpp}{
     numbers=left,
-    basicstyle=\linespread{0.8}\ttfamily\small,
-    numberstyle=\linespread{0.8}\ttfamily\small,
+    basicstyle=\linespread{0.8}\ttfamily\footnotesize,
+    numberstyle=\linespread{0.8}\ttfamily\footnotesize,
     language=C++,
     xleftmargin=6.0ex,
     frame=single,
@@ -191,12 +191,14 @@ The speed-up factor and CPU efficiency were also analyzed.
 \section{Method}
 \subsection{Program design and implementation}
 The sequential and parallel sorting programs were implemented using the C++ programming language.
-MPICH library was used for the parallel part.
+MPICH library was used for the parallel implementation.
 The parallel version was written in \lstinline|src/main.cpp|, 
 while the sequential version was written in \lstinline|src/main.seq.cpp|.
 Some important functions were written in \lstinline|src/utils.h|.
 
 For the flowchart, please refer to Figure \ref{fig:flowchart}.
+The random array was generated in any integer in the range
+of $[0, 10000)$.
 The sequential sorting function is printed as the following c++ function.
 \begin{lstlisting}[style=cpp]
 // binary sort
@@ -253,8 +255,9 @@ else if ((end_idx-1)%2==0 && end_idx<N){
 }
 \end{lstlisting}
 
+\subsection{Usage}
 The program is compiled using CMake build system.
-One can have a look in \lstinline|CMakeLists.txt| and \lstinline|src/CMakeLists.txt| 
+One can have a look at \lstinline|CMakeLists.txt| and \lstinline|src/CMakeLists.txt| 
 to check compilation requirements.
 If one wants to build the program, he can run the following commands to
 configure and start compilation under \lstinline|hw01| directory.
@@ -274,23 +277,30 @@ means do not save any runtime data, and \lstinline|--print 1|
 means output the randomly generated array at first and output
 the sorted array at the end.
 
+For convenience, one can directly execute \lstinline|./scripts/demo.sh|
+for both sequential and parallel odd-even sort on a $n=20$ array.
+
 
 \subsection{Performance evaluation}
 In order to evaluate the parallel code, the program was executed under 
 different configurations.
-With 20 different CPU core numbers (from 4 to 80 with increment 4, $n=4, 8,\dots, 80$)
-and 20 different array sizes (from 50000 to 1000000 with increment 50000, $N=50000, 100000, \dots, 1000000$), 
-overall, 400 cases were sampled.
-Recorded runtime and CPU time were analyzed through the Numpy package in Python.
+With 20 different CPU core numbers (from 4 to 80 with increment 4, $p=4, 8,\dots, 80$)
+and 20 different array sizes (from 50000 to 1000000 with increment 50000, $n=5\times 10^4, 10^5, \dots, 10^6$), 
+total of 400 cases was sampled.
+Recorded runtime and CPU time were analyzed through the Numpy
+package in Python.
 Figures were plotted through the Matplotlib and the Seaborn packages in Python.
 Analysis code were written in \lstinline|analysis/main.ipynb|.
 It is highly recommended to set \lstinline|--print 0| when the array size is large.
-
+\begin{lstlisting}
+./build/bin/main.seq -n 20 --save 0 --print 0 # omit array output
+./build/bin/main.seq -n 20 --save 0 --print 0 # omit array output
+\end{lstlisting}
 
 \newpage
 \section{Result and Discussion}
 \subsection{Running time}
-\begin{figure}[H]
+\begin{figure}[t!]
     \centering
     \includegraphics[width=\textwidth]{../analysis/runtime.pdf}
     \caption{Running time versus the number of CPU cores}
@@ -311,34 +321,36 @@ the running time keeps dropping until the number of cores exceeds 20.
 
 
 \subsection{Performance analysis}
-\begin{figure}[H]
+\begin{figure}[t!]
     \centering
     \includegraphics[width=\textwidth]{../analysis/rate_heatmap.pdf}
     \caption{Heatmap of speed-up rate}
     \label{fig:rate-heat}
 \end{figure}
-The speed-up rate is defined as the following ratio, where $N$ denotes the array size
-and $n$ is the CPU core numbers in a parallel program.
+The speed-up rate $S$ is defined as the following ratio, where $n$ denotes the array size
+and $p$ is the CPU core numbers in a parallel program.
+Let $\sigma(n)$ denote the runtime of running a sequential sorting program on a size $n$ array,
+and let $\sigma(n, p)$ denote the runtime of running a parallel sorting program on 
+a size $n$ array using $p$ processors, then the speed-up rate could be defined as
 \begin{align}
-    r(N, n) = \frac{\text{runtime of sequential sorting a size $N$ array}}
-    {\text{runtime of parallel sorting a size $N$ array using $n$ processes}}
+    S(n, p) = \frac{\sigma(n)}{\sigma(n, p)}
 \end{align}
-Therefore, we can calculate a speed-up rate for each sample $(N, n)$.
+Therefore, we can calculate a speed-up rate for each sample $(n, p)$.
 The heatmap of the speed-up rate is plotted in Figure \ref{fig:rate-heat}.
 A 3D version of the heatmap is also provided in Figure \ref{fig:rate-heat3d} for better visualization.
 The speed-up rate versus array size and CPU core number is plotted in Figure \ref{fig:rate}.
 
-\begin{figure}[H]
+\begin{figure}[t!]
     \centering
     \includegraphics[width=\textwidth]{../analysis/rate.pdf}
     \caption{Speed up rate versus the number of CPU cores and array size}
     \label{fig:rate}
 \end{figure}
 
-Noticeably, the maximum speed-up rate was achieved in $N=1000000$ and $n=20$.
+Noticeably, the maximum speed-up rate was achieved in $n=1000000$ and $p=20$.
 Interestingly, in Figure \ref{fig:rate}, for a fixed array size,
 the speed-up rate will have a significant drop if the CPU core number just exceeds 20, 40, and 60.
-The reason for this could be highly caused by the configuration of the cluster.
+Then this phenomenon could be highly caused by the configuration of the cluster.
 In the CSC4005 computing cluster, it is easy to discover that each node contains
 20 CPU cores.
 If the CPU cores exceed 20, the program would involve more than one node.
@@ -361,6 +373,50 @@ used in sorting.
 That is because when the array size becomes large, the latency caused by
 the odd-even transition would be less dominant.
 
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=\textwidth]{../analysis/logeff_heatmap.pdf}
+    \caption{Heat map of $\log_{10} (\text{seq CPU time}/\text{par CPU time})$ }
+    \label{fig:logeff}
+\end{figure}
+
+
+The efficiency of execution can also illustrate this phenomenon.
+From the heatmap printed in Figure \ref{fig:logeff}, there are three clear color
+gaps between CPU cores 20 and 24, 40 and 44, and 60 and 64, meaning the efficiency
+would drop significantly when inter-node communication occurs.
+To quantitatively illustrate the negative effect of communication, we can
+define some terms.
+Let $\kappa(n, p)$ denote the communication time of running a parallel sorting
+program on size $n$ array using $p$ processors.
+Let $\psi(n, p)$ denote the parallel execution time of running a parallel sorting
+program on size $n$ array using $p$ processors.
+Then we should have the following relation
+\begin{align}
+    S(n, p)\leq \frac{\sigma(n)}{\psi(n, p) + \kappa(n, p)}
+\end{align}
+Naively, we may assume that $\sigma(n)=p\psi(n, p)$, then we have 
+\begin{align}
+    S(n, p)\leq \frac{p\sigma(n)}{\sigma(n) + p\kappa(n, p)} = 
+    \frac{p}{1 + p\frac{\kappa(n,p)}{\sigma(n)}}
+\end{align}
+Hence, we can get an upper bound of $\kappa(n,p)/\sigma(n)$ by
+\begin{align}
+    \frac{\kappa(n, p)}{\sigma(n)} \leq \frac{1}{S(n,p)} - \frac{1}{p}
+\end{align}
+According to the plot in Figure \ref{fig:logks}, we can see that the ratio
+of the communication time would increase with $p$ and decrease with $n$.
+From the data of $n=4,\dots,20$, we can see the communication latency
+in a single node is proportional to the array size $n$.
+This also illustrates that inter-node communication could be extremely
+expensive.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\textwidth]{../analysis/ks_heatmap.pdf}
+    \caption{Heat map of upper bound of $\log_{10}\kappa(n,p)/\sigma(n)$.}
+    \label{fig:logks}
+\end{figure}
 
 \section{Conclusion}
 In conclusion, a parallel odd-even sorting algorithm was implemented and
@@ -387,11 +443,12 @@ runtime.
     \caption{3D heatmap of speed-up rate}
     \label{fig:rate-heat3d}
 \end{figure}
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{../analysis/logeff_heatmap.pdf}
-    \caption{Heat map of $\log_{10} (\text{seq CPU time}/\text{par CPU time})$ }
-    \label{fig:logeff}
+    \includegraphics[width=0.75\textwidth]{../analysis/logeff_heatmap_3d.pdf}
+    \caption{3D heatmap of log efficiency}
+    \label{fig:logeff-heat3d}
 \end{figure}
 
 \newpage

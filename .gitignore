@@ -3,3 +3,4 @@ slurm-*.out
 *.synctex.gz
 *.xdv
 .ipynb_checkpoints
+hw*.zip

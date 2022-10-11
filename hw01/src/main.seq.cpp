@@ -12,6 +12,7 @@ int main(int argc, char* argv[]) {
     // fetch size and rank
     int size = 1, rank = 0;
     int save = 0;
+    int print = 0;
     // initializiation, N = 10 default
     int N = 10;
     // parse argument
@@ -26,6 +27,10 @@ int main(int argc, char* argv[]) {
             std::string num(argv[i+1]);
             save = std::stoi(num);
         }
+        if (strcmp(buff, "--print")==0){
+            std::string num(argv[i+1]);
+            print = std::stoi(num);
+        }
     }
 
     // determine start and end index
@@ -38,6 +43,10 @@ int main(int argc, char* argv[]) {
     printf("HW:   Parallel Odd-Even Sort\n");
     printf("Set N to %d.\n", N);
     fill_rand_arr(arr, N);
+    if (print==1) {
+        printf("Array:\n");
+        print_arr(arr, N);
+    }
 
     // MAIN PROGRAM
     // start time
@@ -52,6 +61,12 @@ int main(int argc, char* argv[]) {
     auto dur_ = std::chrono::duration_cast<std::chrono::duration<double>>(dur);
     double t = dur_.count();
     printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t, size);
+
+    // print array
+    if (print==1) {
+        printf("Sorted array:\n");
+        print_arr(arr, N);
+    }
 
     // free array 
     free(arr);

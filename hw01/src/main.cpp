@@ -220,6 +220,12 @@ int main(int argc, char* argv[]) {
         }
     }
     
+    // master print result
+    if (rank==0 && print==1) {
+        printf("Sorted array:\n");
+        print_arr(arr_, N);
+    }
+
     // end time
     t2 = MPI_Wtime();
     t = t2 - t1;
@@ -228,13 +234,6 @@ int main(int argc, char* argv[]) {
         t_sum = arr_sum(time_arr, size);
         printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t_sum, size);
         // check_sorted(arr_, N);
-    }
-
-
-    // master print result
-    if (rank==0 && print==1) {
-        printf("Sorted array:\n");
-        print_arr(arr_, N);
     }
 
     // free array 

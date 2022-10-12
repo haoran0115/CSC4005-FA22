@@ -55,18 +55,18 @@ int main(int argc, char* argv[]) {
     // sequential sort
     odd_even_sort(arr, N, 0);
 
+    // print array
+    if (print==1) {
+        printf("Sorted array:\n");
+        print_arr(arr, N);
+    }
+
     // end time
     auto t2 = std::chrono::system_clock::now();
     auto dur = t2 - t1;
     auto dur_ = std::chrono::duration_cast<std::chrono::duration<double>>(dur);
     double t = dur_.count();
     printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t, size);
-
-    // print array
-    if (print==1) {
-        printf("Sorted array:\n");
-        print_arr(arr, N);
-    }
 
     // free array 
     free(arr);

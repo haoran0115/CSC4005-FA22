@@ -66,7 +66,7 @@ void min_max(int *arr, int N) {
 
 void print_arr(int* arr, int N){
     for (int i = 0; i < N; i++){
-        printf("%d ", arr[i]);
+        printf("%5d ", arr[i]);
         if ((i+1)%10 == 0) 
             printf("\n");
     }

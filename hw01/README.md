@@ -1,9 +1,9 @@
 # CSC4005 HW01
 
+Report: `report/CSC4005_HW01.pdf`.
+
 Demo
 ```bash
-./scripts/demo.sh
+bash ./scripts/demo.sh
 ```
-
-Report: report/CSC4005_HW01.pdf
 

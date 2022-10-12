@@ -162,7 +162,8 @@
     frame=single,
 }
 \lstdefinestyle{output}{
-    basicstyle=\ttfamily\small,
+    basicstyle=\linespread{0.8}\ttfamily\footnotesize,
+    % frame=none
 }    
 \lstdefinestyle{cpp}{
     numbers=left,
@@ -279,6 +280,12 @@ the sorted array at the end.
 
 For convenience, one can directly execute \lstinline|./scripts/demo.sh|
 for both sequential and parallel odd-even sort on a $n=20$ array.
+\begin{lstlisting}
+cd hw01
+./script/demo.sh
+\end{lstlisting}
+Sample output
+\lstinputlisting[style=output]{../demo.log}
 
 
 \subsection{Performance evaluation}
@@ -404,19 +411,28 @@ Hence, we can get an upper bound of $\kappa(n,p)/\sigma(n)$ by
 \begin{align}
     \frac{\kappa(n, p)}{\sigma(n)} \leq \frac{1}{S(n,p)} - \frac{1}{p}
 \end{align}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=\textwidth]{../analysis/ks_heatmap.pdf}
+    \caption{Heat map of upper bound of $\log_{10}\kappa(n,p)/\sigma(n)$.}
+    \label{fig:logks}
+\end{figure}
+
 According to the plot in Figure \ref{fig:logks}, we can see that the ratio
 of the communication time would increase with $p$ and decrease with $n$.
 From the data of $n=4,\dots,20$, we can see the communication latency
 in a single node is proportional to the array size $n$.
 This also illustrates that inter-node communication could be extremely
 expensive.
+Naively, we may guess an expression for the speed-up rate
+\begin{align}
+    S(n, p) &=
+    \frac{k_1 n^2}{k_1n^2/p + pnk_2(p)} = 
+    \frac{p}{1 + \frac{k_2(p)p^2}{k_1n}}
+\end{align}
+where $\sigma(n) = k_1 n^2$ and $\kappa(n, p) = pnk_2(p)$ 
 
-\begin{figure}[ht!]
-    \centering
-    \includegraphics[width=\textwidth]{../analysis/ks_heatmap.pdf}
-    \caption{Heat map of upper bound of $\log_{10}\kappa(n,p)/\sigma(n)$.}
-    \label{fig:logks}
-\end{figure}
 
 \section{Conclusion}
 In conclusion, a parallel odd-even sorting algorithm was implemented and

@@ -1,0 +1,51 @@
+-- The C compiler identification is GNU 8.5.0
+-- The CXX compiler identification is GNU 8.5.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found MPI_C: /home/shiroha/mpich/mpich-4.0.2/lib/libmpi.so (found version "4.0") 
+-- Found MPI_CXX: /home/shiroha/mpich/mpich-4.0.2/lib/libmpicxx.so (found version "4.0") 
+-- Found MPI: TRUE (found version "4.0")  
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /mnt/e/personal files/CUHK(SZ)/Lectures/SDS/CSC4005/hw01/build
+[ 25%] Building CXX object src/CMakeFiles/main.dir/main.cpp.o
+[ 50%] Linking CXX executable ../bin/main
+[ 50%] Built target main
+[ 75%] Building CXX object src/CMakeFiles/main.seq.dir/main.seq.cpp.o
+[100%] Linking CXX executable ../bin/main.seq
+[100%] Built target main.seq
+=== SEQ ===
+Name: Haoran Sun
+ID:   119010271
+HW:   Parallel Odd-Even Sort
+Set N to 20.
+Array:
+ 9305  6936  6308  3097  5589  7572  3029  4862  1541  6099 
+ 3953  3149  4036  2275  1619  4847  1683  2446  4855  7615 
+Sorted array:
+ 1541  1619  1683  2275  2446  3029  3097  3149  3953  4036 
+ 4847  4855  4862  5589  6099  6308  6936  7572  7615  9305 
+Execution time: 0.00s, cpu time: 0.00s, #cpu  1
+===========
+
+=== PAR ===
+Name: Haoran Sun
+ID:   119010271
+HW:   Parallel Odd-Even Sort
+Set N to 20.
+Array:
+ 9305  6936  6308  3097  5589  7572  3029  4862  1541  6099 
+ 3953  3149  4036  2275  1619  4847  1683  2446  4855  7615 
+Sorted array:
+ 1541  1619  1683  2275  2446  3029  3097  3149  3953  4036 
+ 4847  4855  4862  5589  6099  6308  6936  7572  7615  9305 
+Execution time: 0.00s, cpu time: 0.00s, #cpu  4
+===========

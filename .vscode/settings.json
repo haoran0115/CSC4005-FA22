@@ -37,7 +37,9 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "typeinfo": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "complex": "cpp",
+        "string_view": "cpp"
     },
     "grammarly.selectors": [
         {

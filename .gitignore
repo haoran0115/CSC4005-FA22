@@ -4,3 +4,4 @@ slurm-*.out
 *.xdv
 .ipynb_checkpoints
 hw*.zip
+/tmp

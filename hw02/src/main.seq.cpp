@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     int   DIM  =     500;
     int  save  =       1;
     int   iter =    1000;
+    int record =       0;
 
     // parse argument
     char buff[200];
@@ -50,6 +51,10 @@ int main(int argc, char* argv[]) {
             std::string num(argv[i+1]);
             save = std::stoi(num);
         }
+        if (strcmp(buff, "--record")==0){
+            std::string num(argv[i+1]);
+            record = std::stoi(num);
+        }
     }
     // postprocessing
     int xDIM = DIM;
@@ -78,24 +83,11 @@ int main(int argc, char* argv[]) {
     auto dur_ = std::chrono::duration_cast<std::chrono::duration<double>>(dur);
     double t = dur_.count();
 
-
-    // testing
-    // std::complex<float> a(0.1, 0.1);
-    // char c = 0;
-    // c = mandelbrot_iter(a, a, 100);
-    // printf("c = %d\n", c);
-    // for (int i = 0; i < xDIM*yDIM; i++){
-    //     printf("%f + i%f\n", std::real(Z[i]), std::imag(Z[i]));
-    // }
-    // printf("\n");
+    // record data
+    if (record==1) runtime_record("seq", xDIM*yDIM, 1, t, t);
 
     // save png
-    if (save==1){
-        char filebuff[200];
-        snprintf(filebuff, sizeof(filebuff), "mandelbrot_xD%d_yD%d_xR%5.2f-%5.2f_yR%5.2f-%5.2f_iter%d.png",
-                 xDIM, yDIM, xmin, xmax, ymin, ymax, iter);
-        stbi_write_png(filebuff, xDIM, yDIM, 1, map, 0);
-    }
+    if (save==1) mandelbrot_save("seq", map, xDIM, yDIM);
 
     // free arrays
     free(Z);

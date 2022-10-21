@@ -10,6 +10,8 @@ typedef struct ptargs{
     int start_idx;
     int end_idx;
     int iter;
+    int id;
+    double *time_arr;
 } Ptargs;
 
 void mandelbrot_init(std::complex<float> *Z, int xDIM, int yDIM, float xmin, float xmax, float ymin, float ymax){
@@ -39,9 +41,45 @@ void mandelbrot_loop(std::complex<float> *Z, char *map, int start_idx, int end_i
 }
 
 void *mandelbrot_loop_pt(void *vargs){
+    // transfer args
     Ptargs args = *(Ptargs *)vargs;
+    double *time_arr = args.time_arr;
+    int id = args.id;
+    // start time
+    auto t1 = std::chrono::system_clock::now();
+
+    // main loop
     mandelbrot_loop(args.Z, args.map, args.start_idx, args.end_idx, args.iter);
+    
+    // end time
+    auto t2 = std::chrono::system_clock::now();
+    auto dur = t2 - t1;
+    auto dur_ = std::chrono::duration_cast<std::chrono::duration<double>>(dur);
+    double t = dur_.count();
+    time_arr[id] =  t;
+
     return NULL;
 }
 
+void mandelbrot_save(const char *jobtype, char *map, 
+    int xDIM, int yDIM){
+    char filebuff[200];
+    snprintf(filebuff, sizeof(filebuff), "mandelbrot_%s.png", jobtype);
+    stbi_write_png(filebuff, xDIM, yDIM, 1, map, 0);   
+    printf("Image saved as %s.\n", filebuff);
+}
+
+void runtime_record(const char *jobtype, int N, int nt, double t, double t_sum){
+    FILE* outfile;
+    char filebuff[200];
+    snprintf(filebuff, sizeof(filebuff), "runtime_%s.txt", jobtype);
+    outfile = fopen(filebuff, "a");
+    fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, 1, t, t_sum);
+    fclose(outfile);
+    printf("Runtime added in %s.\n", filebuff);
+}
+
+void runtime_print(int N, int nt, double t, double t_sum){
+    printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t_sum, nt);
+}
 

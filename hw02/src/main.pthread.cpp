@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
     int   save =       1;
     int     nt =       1;
     int   iter =    1000;
+    int record =       0;
 
     // parse argument
     char buff[200];
@@ -56,6 +57,10 @@ int main(int argc, char* argv[]) {
             std::string num(argv[i+1]);
             save = std::stoi(num);
         }
+        if (strcmp(buff, "--record")==0){
+            std::string num(argv[i+1]);
+            record = std::stoi(num);
+        }
     }
     // postprocessing
     int xDIM = DIM;
@@ -76,6 +81,7 @@ int main(int argc, char* argv[]) {
 
     // start time
     auto t1 = std::chrono::system_clock::now();
+    double *time_arr = (double *)malloc(sizeof(double)*nt);
 
     // MAIN program
     // create threads
@@ -83,7 +89,7 @@ int main(int argc, char* argv[]) {
         // calculate start and end index
         int start_idx = xDIM*yDIM/nt * i;
         int end_idx = xDIM*yDIM/nt * (i+1);
-        args[i] = (Ptargs){.Z=Z, .map=map, .start_idx=start_idx, .end_idx=end_idx, .iter=iter};
+        args[i] = (Ptargs){.Z=Z, .map=map, .start_idx=start_idx, .end_idx=end_idx, .iter=iter, .id=i, .time_arr=time_arr};
         if (i==nt-1) args[i].end_idx = xDIM*yDIM;
 
         // create independent threads
@@ -99,21 +105,21 @@ int main(int argc, char* argv[]) {
     auto dur = t2 - t1;
     auto dur_ = std::chrono::duration_cast<std::chrono::duration<double>>(dur);
     double t = dur_.count();
+    double t_sum = 0;
+    for (int i = 0; i < nt; i++) t_sum += time_arr[i];
+
+    // record data
+    if (record==1) runtime_record("pt", xDIM*yDIM, nt, t, t_sum);
 
     // save png
-    if (save==1){
-        char filebuff[200];
-        snprintf(filebuff, sizeof(filebuff), "mandelbrot_xD%d_yD%d_xR%5.2f-%5.2f_yR%5.2f-%5.2f_iter%d.png",
-                 xDIM, yDIM, xmin, xmax, ymin, ymax, iter);
-        stbi_write_png(filebuff, xDIM, yDIM, 1, map, 0);
-    }
+    if (save==1) mandelbrot_save("pt", map, xDIM, yDIM);
 
     // free arrays
     free(Z);
     free(map);
 
     // end time
-    printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t, 1);
+    runtime_print(xDIM*yDIM, nt, t, t_sum);
 
     return 0;
 }

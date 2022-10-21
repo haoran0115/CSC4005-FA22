@@ -26,6 +26,7 @@ int main(int argc, char* argv[]) {
     int   DIM  =     500;
     int  save  =       1;
     int  iter  =    1000;
+    int record =       0;
 
     // parse argument
     char buff[200];
@@ -58,6 +59,10 @@ int main(int argc, char* argv[]) {
         if (strcmp(buff, "--save")==0){
             std::string num(argv[i+1]);
             save = std::stoi(num);
+        }
+        if (strcmp(buff, "--record")==0){
+            std::string num(argv[i+1]);
+            record = std::stoi(num);
         }
     }
     // postprocessing
@@ -128,19 +133,25 @@ int main(int argc, char* argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
-
     // end time
     double t2 = MPI_Wtime();
+    double t = t2 - t1;
+    double *time_arr = (double *)malloc(sizeof(double) * size);
+    double t_sum = 0;
+    MPI_Gather(&t, 1, MPI_DOUBLE, time_arr, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+    for (int i = 0; i < size; i++){
+        t_sum += time_arr[i];
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // record data
+    if (rank==0 && record==1) runtime_record("mpi", xDIM*yDIM, size, t, t_sum);
 
     // save png
-    if (rank==0 && save==1){
-        char filebuff[200];
-        // snprintf(filebuff, sizeof(filebuff), "mandelbrot_mpi_xD%d_yD%d_xR%5.2f-%5.2f_yR%5.2f-%5.2f_iter%d.png",
-        snprintf(filebuff, sizeof(filebuff), "mandelbrot_mpi.png",
-                 xDIM, yDIM, xmin, xmax, ymin, ymax, iter);
-        stbi_write_png(filebuff, xDIM, yDIM, 1, map, 0);
-        printf("Image saved as %s.\n", filebuff);
-    }
+    if (rank==0 && save==1) mandelbrot_save("mpi", map, xDIM, yDIM);
+
+    // sync
     MPI_Barrier(MPI_COMM_WORLD);
 
     // free arrays
@@ -153,9 +164,10 @@ int main(int argc, char* argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     // end time
-    if (rank==0){
-        printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t2-t1, t2-t1, 1);
-    }
+    if (rank==0) runtime_print(xDIM*yDIM, size, t, t_sum);
+
+    // mpi finalization
+    MPI_Finalize();
 
     return 0;
 }

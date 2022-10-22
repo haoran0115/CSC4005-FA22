@@ -1,5 +1,4 @@
 #!/usr/bin/bash
 rm -rf build
+rm runtime*.txt
 rm slurm-*.out
-# rm runtime.txt
-# rm runtime_seq.txt

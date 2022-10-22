@@ -4,6 +4,17 @@
 #include <complex>
 #include "stb_image_write.h"
 
+#ifdef GUI
+#include <GL/glut.h>
+#include <GL/glu.h>
+#include <GL/gl.h>
+
+char *map_glut;
+int xDIM_glut, yDIM_glut;
+int width = 500;
+int xwidth, ywidth;
+#endif
+
 typedef struct ptargs{
     std::complex<float> *Z;
     char *map;
@@ -74,12 +85,102 @@ void runtime_record(const char *jobtype, int N, int nt, double t, double t_sum){
     char filebuff[200];
     snprintf(filebuff, sizeof(filebuff), "runtime_%s.txt", jobtype);
     outfile = fopen(filebuff, "a");
-    fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, 1, t, t_sum);
+    fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, nt, t, t_sum);
     fclose(outfile);
     printf("Runtime added in %s.\n", filebuff);
+}
+
+void runtime_record_detail(const char *jobtype, int N, int nt, double t, double *time_arr){
+    FILE* outfile;
+    char filebuff[200];
+    snprintf(filebuff, sizeof(filebuff), "runtime_detailed_%s_%d.txt", jobtype, nt);
+    outfile = fopen(filebuff, "a");
+    fprintf(outfile, "%10d %5d %10.2f ", N, nt, t);
+    for (int i = 0; i < nt; i++){
+        fprintf(outfile, "%10.2f ", time_arr[i]);
+    }
+    fprintf(outfile, "\n");
+    fclose(outfile);
+    printf("Detailed runtime added in %s.\n", filebuff);
 }
 
 void runtime_print(int N, int nt, double t, double t_sum){
     printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t_sum, nt);
 }
+
+#ifdef GUI
+
+void display_test(){
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glBegin(GL_POLYGON);
+    glVertex2f(0, 0);
+    glVertex2f(1, 0);
+    glVertex2f(1, 1);
+    glVertex2f(0, 1);
+    glEnd();
+
+    glFlush();
+}
+
+void plot(){
+    // display test
+    // initialization 
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    
+    // draw points
+    GLfloat pointSize = 1.0f;
+    glPointSize(pointSize);
+    glBegin(GL_POINTS);
+        glClear(GL_COLOR_BUFFER_BIT);
+        for (int i = 0; i < yDIM_glut; i++){
+            for (int j = 0; j < xDIM_glut; j++){
+                int c0 = (unsigned char) map_glut[i*xDIM_glut+j];
+                float c = c0;
+                c = c0 / 255.0;
+                glColor3f(c, c, c);
+                glVertex2f(j, yDIM_glut-i);
+            }
+        }
+    glEnd();
+
+    // flush
+    glFlush();
+}
+
+void resize(int x, int y){
+    glutReshapeWindow(xwidth, ywidth);
+}
+
+
+void render(const char *jobtype){
+    // glu init
+    int glufoo = 1;
+    char q[] = " ";
+    char *glubar[1];
+    glubar[0] = q;
+    glutInit(&glufoo, glubar);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+
+    // set x and y width
+    xwidth = width;
+    ywidth = yDIM_glut*width/xDIM_glut;
+    printf("x = %d, y = %d\n", xwidth, ywidth);
+    glutInitWindowSize(xwidth, ywidth);
+    glutCreateWindow(jobtype);
+    glMatrixMode(GL_PROJECTION);
+	gluOrtho2D(0, xDIM_glut, 0, yDIM_glut);
+    
+    // display func
+    glutDisplayFunc(plot);
+    // glutDisplayFunc(display_test);
+    glutReshapeFunc(resize);
+    
+    glutMainLoop();
+}
+
+#endif
+
+
 

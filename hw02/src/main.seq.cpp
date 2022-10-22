@@ -10,13 +10,13 @@
 
 int main(int argc, char* argv[]) {
     // initialization
-    float xmin = -2.4e-0;
-    float xmax =  1.0e-0;
-    float ymin = -1.7e-0;
-    float ymax =  1.7e-0;
+    float xmin = -2.0e-0;
+    float xmax =  0.6e-0;
+    float ymin = -1.3e-0;
+    float ymax =  1.3e-0;
     int   DIM  =     500;
     int  save  =       1;
-    int   iter =    1000;
+    int   iter =     200;
     int record =       0;
 
     // parse argument
@@ -89,12 +89,24 @@ int main(int argc, char* argv[]) {
     // save png
     if (save==1) mandelbrot_save("seq", map, xDIM, yDIM);
 
+    // end time
+    runtime_print(xDIM*yDIM, 1, t, t);
+
+    // rendering
+    #ifdef GUI
+    // copy memory
+    map_glut = (char *)malloc(sizeof(char)*xDIM*yDIM);
+    memcpy(map_glut, map, sizeof(char)*xDIM*yDIM);
+    // plot
+    xDIM_glut = xDIM;
+    yDIM_glut = yDIM;
+    render("seq");
+    free(map_glut);
+    #endif
+
     // free arrays
     free(Z);
     free(map);
-
-    // end time
-    printf("Execution time: %.2fs, cpu time: %.2fs, #cpu %2d\n", t, t, 1);
 
     return 0;
 }

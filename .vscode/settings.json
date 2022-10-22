@@ -39,7 +39,18 @@
         "typeinfo": "cpp",
         "thread": "cpp",
         "complex": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "cstddef": "cpp",
+        "atomic": "cpp",
+        "algorithm": "cpp",
+        "iterator": "cpp",
+        "map": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "string": "cpp",
+        "system_error": "cpp"
     },
     "grammarly.selectors": [
         {

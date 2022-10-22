@@ -11,15 +11,17 @@
 
 int main(int argc, char* argv[]) {
     // initialization
-    float xmin = -2.4e-0;
-    float xmax =  1.0e-0;
-    float ymin = -1.7e-0;
-    float ymax =  1.7e-0;
-    int    DIM =     500;
-    int   save =       1;
-    int     nt =       1;
-    int   iter =    1000;
+    float xmin = -2.0e-0;
+    float xmax =  0.6e-0;
+    float ymin = -1.3e-0;
+    float ymax =  1.3e-0;
+    int   DIM  =     500;
+    int  save  =       1;
+    int   iter =     200;
     int record =       0;
+
+    // pthread specific args
+    int     nt =       1;
 
     // parse argument
     char buff[200];
@@ -109,17 +111,32 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < nt; i++) t_sum += time_arr[i];
 
     // record data
-    if (record==1) runtime_record("pt", xDIM*yDIM, nt, t, t_sum);
+    if (record==1){
+        runtime_record("pt", xDIM*yDIM, nt, t, t_sum);
+        runtime_record_detail("pt", xDIM*yDIM, nt, t, time_arr);
+    }
 
     // save png
     if (save==1) mandelbrot_save("pt", map, xDIM, yDIM);
 
-    // free arrays
-    free(Z);
-    free(map);
+    // rendering
+    #ifdef GUI
+    // copy memory
+    map_glut = (char *)malloc(sizeof(char)*xDIM*yDIM);
+    memcpy(map_glut, map, sizeof(char)*xDIM*yDIM);
+    // plot
+    xDIM_glut = xDIM;
+    yDIM_glut = yDIM;
+    render("seq");
+    free(map_glut);
+    #endif
 
     // end time
     runtime_print(xDIM*yDIM, nt, t, t_sum);
+
+    // free arrays
+    free(Z);
+    free(map);
 
     return 0;
 }

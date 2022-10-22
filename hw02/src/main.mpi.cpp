@@ -19,13 +19,13 @@ int main(int argc, char* argv[]) {
 
 
     // initialization
-    float xmin = -2.4e-0;
-    float xmax =  1.0e-0;
-    float ymin = -1.7e-0;
-    float ymax =  1.7e-0;
+    float xmin = -2.0e-0;
+    float xmax =  0.6e-0;
+    float ymin = -1.3e-0;
+    float ymax =  1.3e-0;
     int   DIM  =     500;
     int  save  =       1;
-    int  iter  =    1000;
+    int   iter =     200;
     int record =       0;
 
     // parse argument
@@ -92,8 +92,8 @@ int main(int argc, char* argv[]) {
     Z_ = (std::complex<float> *)malloc(sizeof(std::complex<float>) * (end_idx-start_idx));
     map_ = (char *)malloc(sizeof(char) * (end_idx-start_idx));
 
-    // start time
-    double t1 = MPI_Wtime();
+    // timing
+    double t1, t2;
 
     // MAIN program
     // CASE 1: sequential
@@ -119,8 +119,14 @@ int main(int argc, char* argv[]) {
         // printf("rank %d start_idx %d end_idx %d print %f + %fi\n", 
         //         rank, start_idx, end_idx, std::real(Z_[0]), std::imag(Z_[0]));
 
+        // start timing
+        t1 = MPI_Wtime();
+
         // execution
         mandelbrot_loop(Z_, map_, 0, end_idx-start_idx, iter);
+
+        // end timing
+        t2 = MPI_Wtime();
 
         // gather data
         MPI_Gather(map_, xDIM*yDIM/size, MPI_CHAR, map, xDIM*yDIM/size, MPI_CHAR, 0, MPI_COMM_WORLD);
@@ -134,7 +140,6 @@ int main(int argc, char* argv[]) {
     }
 
     // end time
-    double t2 = MPI_Wtime();
     double t = t2 - t1;
     double *time_arr = (double *)malloc(sizeof(double) * size);
     double t_sum = 0;
@@ -146,13 +151,33 @@ int main(int argc, char* argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     // record data
-    if (rank==0 && record==1) runtime_record("mpi", xDIM*yDIM, size, t, t_sum);
+    if (rank==0 && record==1){
+        runtime_record("mpi", xDIM*yDIM, size, t, t_sum);
+        runtime_record_detail("mpi", xDIM*yDIM, size, t, time_arr);
+    }
 
     // save png
     if (rank==0 && save==1) mandelbrot_save("mpi", map, xDIM, yDIM);
 
     // sync
     MPI_Barrier(MPI_COMM_WORLD);
+
+    // end time
+    if (rank==0) runtime_print(xDIM*yDIM, size, t, t_sum);
+
+    // rendering
+    #ifdef GUI
+    if (rank==0){
+        // copy memory
+        map_glut = (char *)malloc(sizeof(char)*xDIM*yDIM);
+        memcpy(map_glut, map, sizeof(char)*xDIM*yDIM);
+        // plot
+        xDIM_glut = xDIM;
+        yDIM_glut = yDIM;
+        render("seq");
+        free(map_glut);
+    }
+    #endif
 
     // free arrays
     if (rank==0){
@@ -162,9 +187,6 @@ int main(int argc, char* argv[]) {
     free(Z_);
     free(map_);
     MPI_Barrier(MPI_COMM_WORLD);
-
-    // end time
-    if (rank==0) runtime_print(xDIM*yDIM, size, t, t_sum);
 
     // mpi finalization
     MPI_Finalize();

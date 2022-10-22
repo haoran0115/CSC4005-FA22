@@ -6,7 +6,7 @@
                 "${workspaceFolder}/**",
                 "/usr/include/mpich-3.2-x86_64"
             ],
-            "defines": [],
+            "defines": ["GUI"],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c89",
             "cppStandard": "c++14",

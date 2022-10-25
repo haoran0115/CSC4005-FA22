@@ -1,4 +1,4 @@
 #!/usr/bin/bash
 rm -rf build
-rm runtime*.txt
+rm -rf data
 rm slurm-*.out

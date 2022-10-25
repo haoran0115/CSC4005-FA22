@@ -90,12 +90,16 @@ int main(int argc, char* argv[]) {
     map_ = (char *)malloc(sizeof(char) * (end_idx-start_idx));
 
     // timing
-    double t1, t2;
+    double t1, t2, t1_, t2_;
 
     // MAIN program
+    // start timing
+    t1 = MPI_Wtime();
     // CASE 1: sequential
     if (size==1){
+        t1_ = MPI_Wtime();
         mandelbrot_loop(Z, map, 0, xDIM*yDIM, iter);
+        t2_ = MPI_Wtime();
     }
     // CASE 2: parallel
     else {
@@ -117,13 +121,13 @@ int main(int argc, char* argv[]) {
         //         rank, start_idx, end_idx, std::real(Z_[0]), std::imag(Z_[0]));
 
         // start timing
-        t1 = MPI_Wtime();
+        t1_ = MPI_Wtime();
 
         // execution
         mandelbrot_loop(Z_, map_, 0, end_idx-start_idx, iter);
 
         // end timing
-        t2 = MPI_Wtime();
+        t2_ = MPI_Wtime();
 
         // gather data
         MPI_Gather(map_, xDIM*yDIM/size, MPI_CHAR, map, xDIM*yDIM/size, MPI_CHAR, 0, MPI_COMM_WORLD);
@@ -135,12 +139,15 @@ int main(int argc, char* argv[]) {
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+    // end timing
+    t2 = MPI_Wtime();
 
     // end time
-    double t = t2 - t1;
+    double t = t2 - t1;    // overall execution time
+    double t_ = t2_ - t1_; // cpu time on calculaiton
     double *time_arr = (double *)malloc(sizeof(double) * size);
     double t_sum = 0;
-    MPI_Gather(&t, 1, MPI_DOUBLE, time_arr, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(&t_, 1, MPI_DOUBLE, time_arr, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
     for (int i = 0; i < size; i++){
         t_sum += time_arr[i];
@@ -149,8 +156,8 @@ int main(int argc, char* argv[]) {
 
     // record data
     if (rank==0 && record==1){
-        runtime_record("mpi", xDIM*yDIM, size, t, t_sum);
-        runtime_record_detail("mpi", xDIM*yDIM, size, t, time_arr);
+        runtime_record("mpi", DIM, size, t, t_sum);
+        runtime_record_detail("mpi", DIM, size, t, time_arr);
     }
 
     // save png
@@ -160,7 +167,7 @@ int main(int argc, char* argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     // end time
-    if (rank==0) runtime_print(xDIM*yDIM, size, t, t_sum);
+    if (rank==0) runtime_print(DIM, size, t, t_sum);
 
     // rendering
     #ifdef GUI

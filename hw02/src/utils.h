@@ -3,6 +3,8 @@
 #include <iostream>
 #include <complex>
 #include "stb_image_write.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef GUI
 #include <GL/glut.h>
@@ -88,23 +90,27 @@ void mandelbrot_save(const char *jobtype, char *map,
 }
 
 void runtime_record(const char *jobtype, int N, int nt, double t, double t_sum){
+    const char *folder = "data";
+    mkdir(folder, 0777);
     FILE* outfile;
     char filebuff[200];
-    snprintf(filebuff, sizeof(filebuff), "runtime_%s.txt", jobtype);
+    snprintf(filebuff, sizeof(filebuff), "./%s/runtime_%s.txt", folder, jobtype);
     outfile = fopen(filebuff, "a");
-    fprintf(outfile, "%10d %5d %10.2f %10.2f\n", N, nt, t, t_sum);
+    fprintf(outfile, "%10d %5d %10.4f %10.4f\n", N, nt, t, t_sum);
     fclose(outfile);
     printf("Runtime added in %s.\n", filebuff);
 }
 
 void runtime_record_detail(const char *jobtype, int N, int nt, double t, double *time_arr){
+    const char *folder = "data";
+    mkdir(folder, 0777);
     FILE* outfile;
     char filebuff[200];
-    snprintf(filebuff, sizeof(filebuff), "runtime_detailed_%s_%d.txt", jobtype, nt);
+    snprintf(filebuff, sizeof(filebuff), "./%s/runtime_detailed_%s_%d.txt", folder, jobtype, nt);
     outfile = fopen(filebuff, "a");
-    fprintf(outfile, "%10d %5d %10.2f ", N, nt, t);
+    fprintf(outfile, "%10d %5d %10.4f ", N, nt, t);
     for (int i = 0; i < nt; i++){
-        fprintf(outfile, "%10.2f ", time_arr[i]);
+        fprintf(outfile, "%10.4f ", time_arr[i]);
     }
     fprintf(outfile, "\n");
     fclose(outfile);
@@ -173,7 +179,6 @@ void render(const char *jobtype){
     // set x and y width
     xwidth = width;
     ywidth = yDIM_glut*width/xDIM_glut;
-    printf("x = %d, y = %d\n", xwidth, ywidth);
     glutInitWindowSize(xwidth, ywidth);
     glutCreateWindow(jobtype);
     glMatrixMode(GL_PROJECTION);

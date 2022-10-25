@@ -1,21 +1,25 @@
 #!/usr/bin/bash
 
 repeat=1
-# cpu_list="1 $(seq 4 4 40)"
-# cpu_list="$(seq 4 4 80)"
-cpu_list="24"
-# job_start=50000
-job_start=600000
-job_incr=50000
-job_end=1000000
+cpu_list="$(seq 1 1 10)"
+job_start=500
+job_incr=500
+job_end=10000
 p=Project
+
+# repeat=1
+# cpu_list="$(seq 1 1 1)"
+# job_start=2000
+# job_incr=2000
+# job_end=2000
+# p=Project
 
 task_list=$(seq $job_start $job_incr $job_end)
 
 # sampling parallel data
 for m in $(seq $repeat); do
 for i in $cpu_list; do
-for k in $task_list; do
+# for k in $task_list; do
 
 if [ $i -gt 60 ]; then
     n=4
@@ -43,17 +47,18 @@ echo \
 #SBATCH --nodes=$n
 #SBATCH --ntasks=$i
 #SBATCH --cpus-per-task=$per
-#SBATCH --mem=2048mb
+#SBATCH --mem=4096mb
 #SBATCH --partition=$p
 # 
-
-mpirun -np $i ./build/bin/main -n $k --save 1
+for task in \$(seq $job_start $job_incr $job_end); do
+    mpirun -np $i ./build/bin/main.mpi -n \$task --save 0 --record 1
+done
 " > job.sh
 
 sbatch job.sh
 sleep 0.01
 
-done
+# done
 done
 done
 

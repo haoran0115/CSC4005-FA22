@@ -109,12 +109,15 @@ int main(int argc, char* argv[]) {
 
     // record data
     if (record==1){
-        runtime_record("pt", xDIM*yDIM, nt, t, t_sum);
-        runtime_record_detail("pt", xDIM*yDIM, nt, t, time_arr);
+        runtime_record("pt", DIM, nt, t, t_sum);
+        runtime_record_detail("pt", DIM, nt, t, time_arr);
     }
 
     // save png
     if (save==1) mandelbrot_save("pt", map, xDIM, yDIM);
+
+    // end time
+    runtime_print(DIM, nt, t, t_sum);
 
     // rendering
     #ifdef GUI
@@ -128,8 +131,6 @@ int main(int argc, char* argv[]) {
     free(map_glut);
     #endif
 
-    // end time
-    runtime_print(xDIM*yDIM, nt, t, t_sum);
 
     // free arrays
     free(Z);

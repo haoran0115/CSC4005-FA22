@@ -3,4 +3,4 @@
 # build
 ./scripts/build.sh 
 # pthread
-./build/bin/main.seq
+./build/bin/main.pthread -nt 4

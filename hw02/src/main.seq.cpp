@@ -81,13 +81,13 @@ int main(int argc, char* argv[]) {
     double t = dur_.count();
 
     // record data
-    if (record==1) runtime_record("seq", xDIM*yDIM, 1, t, t);
+    if (record==1) runtime_record("seq", DIM, 1, t, t);
 
     // save png
     if (save==1) mandelbrot_save("seq", map, xDIM, yDIM);
 
     // end time
-    runtime_print(xDIM*yDIM, 1, t, t);
+    runtime_print(DIM, 1, t, t);
 
     // rendering
     #ifdef GUI

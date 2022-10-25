@@ -10,6 +10,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 # mpi
 find_package(MPI REQUIRED)
+include_directories(${MPI_INCLUDE_PATH})
 # opengl & glut
 if(GUI)
     find_package(OpenGL REQUIRED)

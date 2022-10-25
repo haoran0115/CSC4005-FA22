@@ -9,5 +9,5 @@ bash ./scripts/demo.sh
 
 Checklist
 * Flowchart?
-* GUI & CMake
-
+* glBitmap?
+* pthread dynamic scheduling

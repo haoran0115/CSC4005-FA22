@@ -77,12 +77,9 @@ int main(int argc, char* argv[]) {
     int start_idx = xDIM*yDIM/size * rank;
     int end_idx = xDIM*yDIM/size * (rank+1);
     if (rank==size-1) end_idx = xDIM*yDIM;
-    // print info
     if (rank==0){
-        printf("Name: Haoran Sun\n");
-        printf("ID:   119010271\n");
-        printf("HW:   Mandelbrot Set Computation\n");
-        printf("Set xDIM to %d, yDIM to %d\n", xDIM, yDIM);
+        // print info
+        print_info(xDIM, yDIM);
         // allocation and initialization
         Z = (std::complex<float> *)malloc(sizeof(std::complex<float>)*yDIM*xDIM);
         map = (char *)malloc(sizeof(char) * xDIM * yDIM);

@@ -25,6 +25,13 @@ typedef struct ptargs{
     double *time_arr;
 } Ptargs;
 
+void print_info(int xDIM, int yDIM){
+    printf("Name: Haoran Sun\n");
+    printf("ID:   119010271\n");
+    printf("HW:   Mandelbrot Set Computation\n");
+    printf("Set xDIM to %d, yDIM to %d\n", xDIM, yDIM);
+}
+
 void mandelbrot_init(std::complex<float> *Z, int xDIM, int yDIM, float xmin, float xmax, float ymin, float ymax){
     for (int i = 0; i < yDIM; i++){
         for (int j = 0; j < xDIM; j++){

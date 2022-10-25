@@ -69,10 +69,7 @@ int main(int argc, char* argv[]) {
     int yDIM = int(DIM*(ymax-ymin)/(xmax-xmin));
 
     // print info
-    printf("Name: Haoran Sun\n");
-    printf("ID:   119010271\n");
-    printf("HW:   Mandelbrot Set Computation\n");
-    printf("Set xDIM to %d, yDIM to %d\n", xDIM, yDIM);
+    print_info(xDIM, yDIM);
 
     // allocation and initialization
     std::complex<float> *Z = (std::complex<float> *)malloc(sizeof(std::complex<float>)*yDIM*xDIM);

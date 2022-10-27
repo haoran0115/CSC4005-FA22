@@ -51,7 +51,8 @@ echo \
 #SBATCH --partition=$p
 # 
 for task in \$(seq $job_start $job_incr $job_end); do
-    mpirun -np $i ./build/bin/main.mpi -n \$task --save 0 --record 1
+    # mpirun -np $i ./build/bin/main.mpi -n \$task --save 0 --record 1
+    ./build/bin/main.pthread -nt $i -n \$task --save 0 --record 1
 done
 " > job.sh
 

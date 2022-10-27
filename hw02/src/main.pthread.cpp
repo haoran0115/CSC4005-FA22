@@ -109,12 +109,12 @@ int main(int argc, char* argv[]) {
 
     // record data
     if (record==1){
-        runtime_record("pt", DIM, nt, t, t_sum);
-        runtime_record_detail("pt", DIM, nt, t, time_arr);
+        runtime_record("pth", DIM, nt, t, t_sum);
+        runtime_record_detail("pth", DIM, nt, t, time_arr);
     }
 
     // save png
-    if (save==1) mandelbrot_save("pt", map, xDIM, yDIM);
+    if (save==1) mandelbrot_save("pth", map, xDIM, yDIM);
 
     // end time
     runtime_print(DIM, nt, t, t_sum);

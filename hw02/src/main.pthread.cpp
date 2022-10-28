@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
     // plot
     xDIM_glut = xDIM;
     yDIM_glut = yDIM;
-    render("seq");
+    render("pthread");
     free(map_glut);
     #endif
 

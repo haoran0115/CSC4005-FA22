@@ -17,6 +17,13 @@ int width = 1000;
 int xwidth, ywidth;
 #endif
 
+typedef struct dsargs{
+    int jobsize;
+    int curr_idx;
+    int max_idx;
+    pthread_mutex_t *mutex_ptr;
+} Dsargs;
+
 typedef struct ptargs{
     std::complex<float> *Z;
     char *map;
@@ -25,6 +32,7 @@ typedef struct ptargs{
     int iter;
     int id;
     double *time_arr;
+    Dsargs *dsptr;
 } Ptargs;
 
 void print_info(int xDIM, int yDIM){
@@ -70,6 +78,42 @@ void *mandelbrot_loop_pt(void *vargs){
 
     // main loop
     mandelbrot_loop(args.Z, args.map, args.start_idx, args.end_idx, args.iter);
+    
+    // end time
+    auto t2 = std::chrono::system_clock::now();
+    auto dur = t2 - t1;
+    auto dur_ = std::chrono::duration_cast<std::chrono::duration<double>>(dur);
+    double t = dur_.count();
+    time_arr[id] =  t;
+
+    return NULL;
+}
+
+
+void *mandelbrot_loop_pt_ds(void *vargs){
+    // transfer args
+    Ptargs args = *(Ptargs *)vargs;
+    double *time_arr = args.time_arr;
+    int id = args.id;
+    int max_idx = args.dsptr->max_idx;
+    // start time
+    auto t1 = std::chrono::system_clock::now();
+
+    // get mutex
+    pthread_mutex_t *mutex_ptr = args.dsptr->mutex_ptr;
+    while (true){
+        // read parameters from global scheduling parameters
+        pthread_mutex_lock(mutex_ptr);
+        int start_idx = args.dsptr->curr_idx;
+        int end_idx   = start_idx + args.dsptr->jobsize;
+        if (end_idx > max_idx) end_idx = max_idx;
+        args.dsptr->curr_idx = end_idx;
+        pthread_mutex_unlock(mutex_ptr);
+        if (start_idx>=max_idx) break;
+        // main loop
+        // printf("id = %d, s = %d, e = %d, m = %d\n", id, start_idx, end_idx, max_idx);
+        mandelbrot_loop(args.Z, args.map, start_idx, end_idx, args.iter);
+    }
     
     // end time
     auto t2 = std::chrono::system_clock::now();

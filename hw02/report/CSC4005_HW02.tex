@@ -238,6 +238,7 @@ cd hw02
 ./scripts/demo.seq.sh
 ./scripts/demo.mpi.sh
 ./scripts/demo.pthread.sh
+./scripts/demo.pthread_ds.sh # ds means dynamic scheduling
 \end{lstlisting}
 
 The program is compiled using CMake build system.
@@ -273,7 +274,7 @@ mpirun -np 4 ./build/bin/main.mpi $paras $save $record # mpi program
 \end{lstlisting}
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=\textwidth]{../mandelbrot_pt.png}
+    \includegraphics[width=\textwidth]{../mandelbrot_pth.png}
     \caption{Sample output image}
     \label{fig:image}
 \end{figure}
@@ -320,11 +321,15 @@ According to the flowchart in Figure \ref{fig:mpiflow} and \ref{fig:pthflow},
 the mesh is averagely distributed to each process/thread.
 Nevertheless, the computation time of each thread may not be the same,
 which means some thread may finish their job very fast and keep waiting
-other threads finish their job.
-
+other threads finish their job. 
 This issue would be further discussed in the following sections.
 
+Due to the static scheduling algorithm, the performance of 
+MPI and Pthreads are approximately the same, as Figure \ref{fig:mpiflow}
+shown.
 
+
+\clearpage
 \newpage
 \subsection{Performance analysis}
 The heatmap of acceleration is plotted in Figure \ref{fig:heatmap-rate}.
@@ -363,17 +368,31 @@ which performs partition.
 To solve this issue, one may apply dynamic scheduling.
 The dynamic scheduling would constantly check the status of each process/thread
 and utilize spare computational resources dynamically and efficiently.
+For example, the dynamic scheduling scheme in this homework is completed by
+set several variables: \lstinline|max_idx| is the number of total jobs,
+\lstinline|curr_idx| records how many jobs have been finished, 
+\lstinline|jobsize| is the data points that each process will process in 
+one iteration.
+In each iteration, the thread will first check if there are unfinished
+jobs. If there is, a computing job with a size equal to \lstinline|jobsize|
+will be assigned to this thread.
+If not, the program will terminate the calculation.
+In this case, \lstinline|jobsize| is set to be 500*500.
+Note that Pthreads mutex lock is useful to avoid racing problems.
+One can refer to \lstinline|src/main.pthread_ds.cpp| and
+\lstinline|mandelbrot_loop_pt_ds| in \lstinline|src/utils.h| for detailed implementation.
+Dynamic scheduling is useful when the problem size is large.
+As Figure \ref{fig:ds} shown, in the Pthreads implementation of dynamic
+scheduling, it can further speed up the naive Pthreads
+calculation up to more than 2.5 times.
 
-\subsection{Parallel schemes}
-\begin{figure}[t!]
+\begin{figure}[h!]
     \centering
-    \includegraphics[width=\textwidth]{../analysis/mpi2pth.pdf}
-    \caption{Ratio of MPI and Pthreads speed-up rate.}
-    \label{fig:mpi2pth}
+    \includegraphics[width=\textwidth]{../analysis/pds2pth.pdf}
+    \caption{Dynamic scheduling speed up vs naive parallel speed-up}
+    \label{fig:ds}
 \end{figure}
-Due to the static scheduling algorithm, the performance of 
-MPI and Pthreads are approximately the same, as Figure \ref{fig:mpiflow}
-shown.
+
 
 
 
@@ -403,6 +422,12 @@ to fully utilize computational resources.
     \label{fig:pthflow}
 \end{figure}
 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{../analysis/mpi2pth.pdf}
+    \caption{Ratio of MPI and Pthreads speed-up rate.}
+    \label{fig:mpi2pth}
+\end{figure}
 
 \clearpage
 \newpage

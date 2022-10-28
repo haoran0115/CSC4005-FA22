@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 repeat=1
-cpu_list="$(seq 1 1 10)"
+cpu_list="$(seq 11 1 20)"
 job_start=500
 job_incr=500
 job_end=10000
@@ -52,7 +52,7 @@ echo \
 # 
 for task in \$(seq $job_start $job_incr $job_end); do
     # mpirun -np $i ./build/bin/main.mpi -n \$task --save 0 --record 1
-    ./build/bin/main.pthread -nt $i -n \$task --save 0 --record 1
+    ./build/bin/main.pthread_ds -nt $i -n \$task --save 0 --record 1
 done
 " > job.sh
 

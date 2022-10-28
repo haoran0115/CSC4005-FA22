@@ -229,9 +229,8 @@ Pthreads \lstinline|src/main.pthread.cpp|.
 
 \subsection{Usage}
 \textit{\color{red}
-For convenience, one can directly execute \lstinline|demo.seq.sh|,
-\lstinline|demo.mpi.sh|, and \lstinline|demo.pthread.sh| under 
-\lstinline|hw02/| to have a first glimpse of the program.
+For convenience, one can directly execute 
+demonstration shell scripts to have a first glimpse of the program.
 }
 \begin{lstlisting}[style=sh]
 cd hw02
@@ -268,9 +267,10 @@ Figure \ref{fig:image} would be saved.
 paras="--ndim 2000 --xmin -0.125 --xmax 0.125 --ymin 0.6 --ymax 0.7"
 record="--record 0"
 save="--save 1"
-./build/bin/main.seq $paras $save $record              # sequential program
-mpirun -np 4 ./build/bin/main.mpi $paras $save $record # mpi program   
-./build/bin/main.pthread -nt 4 $paras $save $record    # pthreads program
+./build/bin/main.seq $paras $save $record               # sequential program
+mpirun -np 4 ./build/bin/main.mpi $paras $save $record  # mpi program   
+./build/bin/main.pthread    -nt 4 $paras $save $record  # pthreads program
+./build/bin/main.pthread_ds -nt 4 $paras $save $record  # dynamic scheduling pthreads program 
 \end{lstlisting}
 \begin{figure}[h!]
     \centering

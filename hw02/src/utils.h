@@ -13,7 +13,7 @@
 
 char *map_glut;
 int xDIM_glut, yDIM_glut;
-int width = 1000;
+int width = 500;
 int xwidth, ywidth;
 #endif
 

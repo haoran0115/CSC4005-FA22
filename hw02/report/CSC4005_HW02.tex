@@ -231,6 +231,7 @@ Pthreads \lstinline|src/main.pthread.cpp|.
 \textit{\color{red}
 For convenience, one can directly execute 
 demonstration shell scripts to have a first glimpse of the program.
+One can refer to Figure \ref{fig:demo} for sample GUI output.
 }
 \begin{lstlisting}[style=sh]
 cd hw02
@@ -365,7 +366,7 @@ Then, we can again confirm that the relative-low efficiency
 of the parallel program is caused by the scheduling algorithm
 which performs partition. 
 
-To solve this issue, one may apply dynamic scheduling.
+To solve this issue, one may apply \textbf{dynamic scheduling}.
 The dynamic scheduling would constantly check the status of each process/thread
 and utilize spare computational resources dynamically and efficiently.
 For example, the dynamic scheduling scheme in this homework is completed by
@@ -424,7 +425,14 @@ to fully utilize computational resources.
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=\textwidth]{../analysis/mpi2pth.pdf}
+    \includegraphics[width=0.6\textwidth]{../demo.png}
+    \caption{Sample GUI output by executing \lstinline|scripts/demo.pthread.sh|.}
+    \label{fig:demo}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{../analysis/mpi2pth.pdf}
     \caption{Ratio of MPI and Pthreads speed-up rate.}
     \label{fig:mpi2pth}
 \end{figure}

@@ -4,9 +4,12 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/mpich-3.2-x86_64"
+                "/usr/include/mpich-3.2-x86_64",
+                "/usr/local/cuda/include"
             ],
-            "defines": ["GUI"],
+            "defines": [
+                "GUI"
+            ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c89",
             "cppStandard": "c++14",

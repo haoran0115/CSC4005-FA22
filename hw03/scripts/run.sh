@@ -1,3 +1,5 @@
 #!/usr/bin/bash
-./scripts/build.sh 
+export OMP_NUM_THREADS=4
+
+./scripts/build.sh
 ./build/bin/main

@@ -6,7 +6,6 @@
 #include "const.h"
 #include "utils.h"
 #include "utils.cuh"
-// #include "const.cuh"
 #ifdef GUI
 #include "gui.h"
 #endif
@@ -27,11 +26,11 @@ void compute(){
 
         // verlet cuda
         // main compute program
-        printf("call cuda\n");
         compute_cu(xarr, nsteps, N, dim, G, dt, radius);
 
         // check 
-        print_arr(xarr, N*dim);
+        // print_arr(xarr, N*dim);
+        if (s==nsteps-1) print_arr(xarr, N*dim);
 
         // opengl
         #ifdef GUI
@@ -60,11 +59,11 @@ void compute(){
 int main(int argc, char *argv[]){
     // initialization
     N = 5000;
-    // N = 3;
-    nsteps = 1000;
-    // nsteps = 3;
+    // N = 5;
+    nsteps = 20;
+    // nsteps = 1;
     G = 0.1;
-    dt = 0.001;
+    dt = 0.005;
     marr  = (double *)malloc(sizeof(double) * N);
     xarr  = (double *)malloc(sizeof(double) * N * dim);
     xarr0 = (double *)malloc(sizeof(double) * N * dim);
@@ -78,8 +77,8 @@ int main(int argc, char *argv[]){
     vec_add(xarr0, xarr0, xarr, 0, 1, N*dim);
 
     // cuda initialize
-    Tx = 32;
-    Ty = 32;
+    Tx = 16;
+    Ty = 16;
     initialize_cu(marr, xarr, N, dim, Tx, Ty);
 
     // main program

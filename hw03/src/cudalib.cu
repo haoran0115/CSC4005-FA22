@@ -26,9 +26,9 @@ __device__ void partition_d(int nsteps, int size, int idx, int *start_ptr, int *
 __device__ double norm_d(double *x, int dim){
     double r = 0;
     for (int i = 0; i < dim; i++){
-        r += std::pow(x[i], 2);
+        r += x[i]*x[i];
     }
-    r = std::sqrt(r);
+    r = sqrt(r);
     return r;
 }
 
@@ -40,14 +40,33 @@ __device__ void vec_add_d(double *a, double *b, double *c,
 }
 
 
-__global__ void vec_add_cu(double *a, double *b, double *c, 
-    double fac1, double fac2, int dim){
+__global__ void vec_add_cu(double *a, double *b, double *c, int dim){
     int size = blockDim.x * gridDim.x;
     int idx = blockDim.x*blockIdx.x + threadIdx.x;
     int start_idx, end_idx;
     partition_d(dim, size, idx, &start_idx, &end_idx);
     for (int i = start_idx; i < end_idx; i++){
-        a[i] = fac1*b[i] + fac2*c[i];
+        a[i] = b[i] + c[i];
+    }
+}
+
+__global__ void vec_sub_cu(double *a, double *b, double *c, int dim){
+    int size = blockDim.x * gridDim.x;
+    int idx = blockDim.x*blockIdx.x + threadIdx.x;
+    int start_idx, end_idx;
+    partition_d(dim, size, idx, &start_idx, &end_idx);
+    for (int i = start_idx; i < end_idx; i++){
+        a[i] = b[i] - c[i];
+    }
+}
+
+__global__ void gather_dx_cu(double *a, double *b, double *c, int dim){
+    int size = blockDim.x * gridDim.x;
+    int idx = blockDim.x*blockIdx.x + threadIdx.x;
+    int start_idx, end_idx;
+    partition_d(dim, size, idx, &start_idx, &end_idx);
+    for (int i = start_idx; i < end_idx; i++){
+        a[i] += b[i] - c[i];
     }
 }
 
@@ -59,35 +78,26 @@ __global__ void verlet_at2_cu(const int dim, double *marr, double *xarr, double 
     partition_d(N, size, idx, &start_idx, &end_idx);
     // printf("%d %d\n", start_idx, end_idx);
     // TODO: check later
-    double tmp[2];
-    double tmp1[2];
-    double xij[2];
     for (int i = start_idx; i < end_idx; i++){
-        tmp[0] = 0.0;
-        tmp[1] = 0.0;
+        double tmp0 = 0.0;
+        double tmp1 = 0.0;
         for (int j = 0; j < N; j++){
             if (j!=i){
-            double mi = marr[i];
-            double mj = marr[j];
             // get xij
-            get_xij_d(i, j, dim, xarr, xij, N);
+            double xij0 = xarr[j*dim+0] - xarr[i*dim+0];
+            double xij1 = xarr[j*dim+1] - xarr[i*dim+1];
             // compute rij
-            double rij = norm_d(xij, dim);
+            double rij = sqrt(xij0*xij0 + xij1*xij1);
             double fac = 1.0;
             if (rij < cut) {
                 rij = cut;
             }
-            // compute intermediate variable
-            for (int k = 0; k < dim; k++){
-                double tmp_d;
-                tmp_d = xij[k] * G/(rij*rij*rij) * mj*dt*dt;
-                tmp[k] += tmp_d;
-            }
+            tmp0 += xij0 * G/(rij*rij*rij) * marr[j]*dt*dt;
+            tmp1 += xij1 * G/(rij*rij*rij) * marr[j]*dt*dt;
             }
         }
-        for (int k = 0; k < dim; k++){
-            dxarr[i*dim + k] = tmp[k];
-        }
+        dxarr[i*dim + 0] = tmp0;
+        dxarr[i*dim + 1] = tmp1;
     }
 }
 
@@ -134,12 +144,11 @@ void compute_cu(double *xarr, int nsteps, int N, int dim, double G, double dt, d
     double *tmp;
     cudaMemset(dxarr_d, 0x00, sizeof(double)*N*dim);
     verlet_at2_cu<<<Tx_cu,Ty_cu>>>(dim, marr_d, xarr_d, xarr0_d, dxarr_d, dt, G, N, cut); // dx: acc
-    vec_add_cu<<<Tx_cu,Ty_cu>>>(dxarr_d, dxarr_d, xarr_d, 1.0, 1.0, N*dim); // dx: x(t)
-    vec_add_cu<<<Tx_cu,Ty_cu>>>(dxarr_d, dxarr_d, xarr0_d, 1.0, -1.0, N*dim); // dx: x(t-dt)
+    gather_dx_cu<<<Tx_cu,Ty_cu>>>(dxarr_d, xarr_d, xarr0_d, N*dim);
     tmp = xarr_d;
     xarr_d = xarr0_d;
     xarr0_d = tmp;
-    vec_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, 1.0, 1.0, N*dim);
+    vec_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N*dim);
 
     // copy x to host
     cudaMemcpy(xarr, xarr_d, sizeof(double)*N*dim, cudaMemcpyDeviceToHost);

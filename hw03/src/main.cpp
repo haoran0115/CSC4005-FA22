@@ -6,6 +6,7 @@
 #include "const.h"
 #include "utils.h"
 #include "utils.cuh"
+// #include "const.cuh"
 #ifdef GUI
 #include "gui.h"
 #endif
@@ -13,25 +14,24 @@
 void compute(){
     // main program
     for (int s = 0; s < nsteps; s++){
-        // // step 1: initialize dv and dx to 0 in each step
-        // vec_assign_const(dvarr, 0, N*dim);
-        // // step 2: compute dv and dx
-        // vec_add(dxarr, dxarr, varr, 0.0, dt, N*dim);
-        // compute_dv(dim, marr, xarr, dvarr, dt, G, N, radius);
-        // // step 3: update v and x
-        // vec_add(xarr, xarr, dxarr, 1.0, 1.0, N*dim);
-        // vec_add(varr, varr, dvarr, 1.0, 1.0, N*dim);
+        // // verlet omp
+        // double *tmp;
+        // vec_assign_const(dxarr, 0, N*dim);
+        // verlet_at2_omp(dim, marr, xarr, xarr0, dxarr, dt, G, N, radius); // dx: acc
+        // vec_add_omp(dxarr, dxarr, xarr, 1.0, 1.0, N*dim);         // dx: x(t)
+        // vec_add_omp(dxarr, dxarr, xarr0, 1.0, -1.0, N*dim);       // dx: x(t-dt)
+        // tmp = xarr0;
+        // xarr0 = xarr;
+        // xarr = tmp;  // switch
+        // vec_add_omp(xarr, xarr0, dxarr, 1.0, 1.0, N*dim);    // xarr = xarr(0) + dxarr
 
-        // verlet
-        vec_assign_const(dxarr, 0, N*dim);
-        verlet_at2_omp(dim, marr, xarr, xarr0, dt, G, N, radius);
-        vec_add_omp(dxarr, dxarr, xarr, 1.0, 1.0, N*dim);
-        vec_add_omp(dxarr, dxarr, xarr0, 1.0, -1.0, N*dim);
-        vec_add_omp(xarr0, xarr0, xarr, 0.0, 1.0, N*dim);
-        vec_add_omp(xarr, xarr, dxarr, 1.0, 1.0, N*dim);
+        // verlet cuda
+        // main compute program
+        printf("call cuda\n");
+        compute_cu(xarr, nsteps, N, dim, G, dt, radius);
 
-        // // check 
-        // print_arr(xarr, N*dim);
+        // check 
+        print_arr(xarr, N*dim);
 
         // opengl
         #ifdef GUI
@@ -59,22 +59,28 @@ void compute(){
 
 int main(int argc, char *argv[]){
     // initialization
-    N = 300;
-    nsteps = 1e7;
+    N = 5000;
+    // N = 3;
+    nsteps = 1000;
+    // nsteps = 3;
     G = 0.1;
     dt = 0.001;
     marr  = (double *)malloc(sizeof(double) * N);
     xarr  = (double *)malloc(sizeof(double) * N * dim);
     xarr0 = (double *)malloc(sizeof(double) * N * dim);
-    varr  = (double *)malloc(sizeof(double) * N * dim);
     dxarr = (double *)malloc(sizeof(double) * N * dim);
-    dvarr = (double *)malloc(sizeof(double) * N * dim);
 
     // random generate initial condition
-    random_generate(xarr, marr, N);
+    random_generate(xarr, marr, N, dim);
+    // print_arr(xarr, N*dim);
     
-    // verlet
+    // initialization
     vec_add(xarr0, xarr0, xarr, 0, 1, N*dim);
+
+    // cuda initialize
+    Tx = 32;
+    Ty = 32;
+    initialize_cu(marr, xarr, N, dim, Tx, Ty);
 
     // main program
     #ifdef GUI
@@ -90,8 +96,15 @@ int main(int argc, char *argv[]){
     #else
     compute();
     #endif
-    // compute();
 
+    // free
+    free(marr);
+    free(xarr);
+    free(xarr0);
+    free(dxarr);
+
+    // cudafree
+    finalize_cu();
 
     return 0;
 }

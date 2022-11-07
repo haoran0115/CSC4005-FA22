@@ -13,9 +13,12 @@ double G = 1;    // gravity constant
 double dt = 0.001; // time step
 double *marr;    // mass array
 double *xarr;    // position array
+double *xarr0;
 double *varr;    // velocity array
 double *dxarr;   // position shift array
 double *dvarr;   // velocity shift array
 
-double *xarr0;
+// cuda parameters
+int Tx = 1;
+int Ty = 1;
 

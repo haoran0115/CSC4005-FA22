@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -59,7 +60,7 @@ void vec_add_omp(double *a, double *b, double *c,
 }
 
 void verlet_at2(int dim, double *marr, double *xarr, double *xarr0,
-               double dt, double G, int N, double cut){
+               double *dxarr, double dt, double G, int N, double cut){
     for (int idx = 0; idx < N*(N-1)/2; idx++) {
         int i, j;
         map_idx_to_pair(N, idx, &i, &j);
@@ -87,7 +88,7 @@ void verlet_at2(int dim, double *marr, double *xarr, double *xarr0,
 }
 
 void verlet_at2_omp(int dim, double *marr, double *xarr, double *xarr0,
-               double dt, double G, int N, double cut){
+               double *dxarr, double dt, double G, int N, double cut){
     #pragma omp parallel for
     for (int i = 0; i < N; i++){
         for (int j = 0; j < N; j++){
@@ -173,11 +174,13 @@ void vec_assign_const(double *a, double c, int dim){
     }
 }
 
-void random_generate(double *xarr, double *marr, int N){
+void random_generate(double *xarr, double *marr, int N, int dim){
     for (int i = 0; i < N; i++){
-        double x = (double) rand() / RAND_MAX * 4 - 2;
+        for (int j = 0; j < dim; j++){
+            double x = (double) rand() / RAND_MAX * 4 - 2;
+            xarr[i*dim+j] = x;
+        }
         double m = (double) rand() / RAND_MAX + 1;
-        xarr[i] = x;
         marr[i] = m;
     }
 }

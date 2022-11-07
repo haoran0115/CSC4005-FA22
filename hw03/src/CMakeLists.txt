@@ -35,6 +35,8 @@ if(GUI)
 endif()
 
 # targets & libs
+add_library(cudalib cudalib.cu)
 add_executable(main main.cpp)
 
+target_link_libraries(main cudalib)
 

@@ -26,11 +26,12 @@ void compute(){
 
         // verlet cuda
         // main compute program
+        printf("call cuda\n");
         compute_cu(xarr, nsteps, N, dim, G, dt, radius);
 
         // check 
         // print_arr(xarr, N*dim);
-        if (s==nsteps-1) print_arr(xarr, N*dim);
+        // if (s==nsteps-1) print_arr(xarr, N*dim);
 
         // opengl
         #ifdef GUI
@@ -58,9 +59,9 @@ void compute(){
 
 int main(int argc, char *argv[]){
     // initialization
-    N = 5000;
+    N = 10000;
     // N = 5;
-    nsteps = 20;
+    nsteps = 120;
     // nsteps = 1;
     G = 0.1;
     dt = 0.005;
@@ -94,6 +95,7 @@ int main(int argc, char *argv[]){
     glutMainLoop();
     #else
     compute();
+    // cudaDeviceSynchronize();
     #endif
 
     // free
@@ -104,6 +106,7 @@ int main(int argc, char *argv[]){
 
     // cudafree
     finalize_cu();
+    cudaDeviceSynchronize();
 
     return 0;
 }

@@ -150,6 +150,8 @@ void compute_cu(double *xarr, int nsteps, int N, int dim, double G, double dt, d
     xarr0_d = tmp;
     vec_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N*dim);
 
+    // cudaDeviceSynchronize();
+    // cudaMemcpy(xarr, xarr_d, sizeof(double)*N*dim, cudaMemcpyDeviceToHost);
 
     #ifdef GUI
     // copy x to host

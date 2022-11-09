@@ -59,9 +59,9 @@ void compute(){
 
 int main(int argc, char *argv[]){
     // initialization
+    // N = 10000;
     N = 10000;
-    // N = 5;
-    nsteps = 120;
+    nsteps = 10;
     // nsteps = 1;
     G = 0.1;
     dt = 0.005;

@@ -13,7 +13,7 @@ void partition(int nsteps, int size, int idx, int *start_ptr, int *end_ptr){
 
 void map_idx_to_pair(int N, int idx, int *i_ptr, int *j_ptr){
     int work = N*(N-1) / 2;
-    int tmp = (-1 + std::sqrt(8*idx+9)) / 2;
+    int tmp = (-1 + sqrt(8*idx+9)) / 2;
     int idx_ = tmp * (tmp+1) / 2 - 1;
     if (idx_ < idx) tmp += 1;
     idx_ = tmp * (tmp+1) / 2 - 1;
@@ -22,64 +22,64 @@ void map_idx_to_pair(int N, int idx, int *i_ptr, int *j_ptr){
     // printf("mmm %d %d\n", *i_ptr, *j_ptr);
 }
 
-double norm(double *x, int dim){
-    double r = 0;
+float norm(float *x, int dim){
+    float r = 0;
     for (int i = 0; i < dim; i++){
-        r += std::pow(x[i], 2);
+        r += pow(x[i], 2);
     }
-    r = std::sqrt(r);
+    r = sqrt(r);
     return r;
 }
 
-void get_xij(int i, int j, int dim, double *xarr, double *xij, int N){
+void get_xij(int i, int j, int dim, float *xarr, float *xij, int N){
     for (int k = 0; k < dim; k++){
         xij[k] = xarr[j*dim+k] - xarr[i*dim+k];
     }
 }
 
-void print_arr(double *arr, int n){
+void print_arr(float *arr, int n){
     for (int i = 0; i < n; i++){
         printf("%10.2f  ", arr[i]);
     }
     printf("\n");
 }
 
-void vec_add(double *a, double *b, double *c, 
-             double fac1, double fac2, int dim){
+void vec_add(float *a, float *b, float *c, 
+             float fac1, float fac2, int dim){
     for (int i = 0; i < dim; i++){
         a[i] = fac1*b[i] + fac2*c[i];
     }
 }
 
-void vec_add_omp(double *a, double *b, double *c, 
-             double fac1, double fac2, int dim){
+void vec_add_omp(float *a, float *b, float *c, 
+             float fac1, float fac2, int dim){
     #pragma omp parallel for
     for (int i = 0; i < dim; i++){
         a[i] = fac1*b[i] + fac2*c[i];
     }
 }
 
-void verlet_at2(int dim, double *marr, double *xarr, double *xarr0,
-               double *dxarr, double dt, double G, int N, double cut){
+void verlet_at2(int dim, float *marr, float *xarr, float *xarr0,
+               float *dxarr, float dt, float G, int N, float cut){
     for (int idx = 0; idx < N*(N-1)/2; idx++) {
         int i, j;
         map_idx_to_pair(N, idx, &i, &j);
         // printf("%d %d\n", i, j);
-        double xij[dim];
-        double tmp[dim];
-        double mi = marr[i];
-        double mj = marr[j];
+        float xij[dim];
+        float tmp[dim];
+        float mi = marr[i];
+        float mj = marr[j];
         // get xij
         get_xij(i, j, dim, xarr, xij, N);
         // compute rij
-        double rij = norm(xij, dim);
-        double fac = 1.0;
+        float rij = norm(xij, dim);
+        float fac = 1.0;
         if (rij < cut) {
             rij = cut;
         }
         // compute intermediate variable
         for (int k = 0; k < dim; k++){
-            tmp[k] = xij[k]*G/std::pow(rij, 3);
+            tmp[k] = xij[k]*G/pow(rij, 3);
         }
         // add to dx
         vec_add(dxarr+i*dim, dxarr+i*dim, tmp, 1.0, mj*dt*dt, dim);
@@ -87,27 +87,27 @@ void verlet_at2(int dim, double *marr, double *xarr, double *xarr0,
     }
 }
 
-void verlet_at2_omp(int dim, double *marr, double *xarr, double *xarr0,
-               double *dxarr, double dt, double G, int N, double cut){
+void verlet_at2_omp(int dim, float *marr, float *xarr, float *xarr0,
+               float *dxarr, float dt, float G, int N, float cut){
     #pragma omp parallel for
     for (int i = 0; i < N; i++){
         for (int j = 0; j < N; j++){
             if (j!=i){
-            double xij[dim];
-            double tmp[dim];
-            double mi = marr[i];
-            double mj = marr[j];
+            float xij[dim];
+            float tmp[dim];
+            float mi = marr[i];
+            float mj = marr[j];
             // get xij
             get_xij(i, j, dim, xarr, xij, N);
             // compute rij
-            double rij = norm(xij, dim);
-            double fac = 1.0;
+            float rij = norm(xij, dim);
+            float fac = 1.0;
             if (rij < cut) {
                 rij = cut;
             }
             // compute intermediate variable
             for (int k = 0; k < dim; k++){
-                tmp[k] = xij[k]*G/std::pow(rij, 3);
+                tmp[k] = xij[k]*G/pow(rij, 3);
             }
             // add to dx
             vec_add(dxarr+i*dim, dxarr+i*dim, tmp, 1.0, mj*dt*dt, dim);
@@ -117,24 +117,24 @@ void verlet_at2_omp(int dim, double *marr, double *xarr, double *xarr0,
 }
 
 
-void compute_dv(int dim, double *marr, double *xarr, double *dvarr, 
-                 double dt, double G, int N, double cut){
+void compute_dv(int dim, float *marr, float *xarr, float *dvarr, 
+                 float dt, float G, int N, float cut){
     for (int idx = 0; idx < N*(N-1)/2; idx++) {
         int i, j;
         map_idx_to_pair(N, idx, &i, &j);
         // printf("%d %d\n", i, j);
-        double xij[dim];
-        double tmp[dim];
-        double mi = marr[i];
-        double mj = marr[j];
+        float xij[dim];
+        float tmp[dim];
+        float mi = marr[i];
+        float mj = marr[j];
         // get xij
         get_xij(i, j, dim, xarr, xij, N);
         // compute rij
-        double rij = norm(xij, dim);
+        float rij = norm(xij, dim);
         if (rij < cut) rij = cut;
         // compute intermediate variable
         for (int k = 0; k < dim; k++){
-            tmp[k] = xij[k]*G/std::pow(rij, 3);
+            tmp[k] = xij[k]*G/pow(rij, 3);
         }
         // add to dv
         vec_add(dvarr+i*dim, dvarr+i*dim, tmp, 1.0, mj*dt, dim);
@@ -143,24 +143,24 @@ void compute_dv(int dim, double *marr, double *xarr, double *dvarr,
 }
 
 
-void compute_dv_omp(int dim, double *marr, double *xarr, double *dvarr, 
-                 double dt, double G, int N, double cut){
+void compute_dv_omp(int dim, float *marr, float *xarr, float *dvarr, 
+                 float dt, float G, int N, float cut){
     #pragma omp parallel for
     for (int idx = 0; idx < N*(N-1)/2; idx++) {
         int i, j;
         map_idx_to_pair(N, idx, &i, &j);
-        double xij[dim];
-        double tmp[dim];
-        double mi = marr[i];
-        double mj = marr[j];
+        float xij[dim];
+        float tmp[dim];
+        float mi = marr[i];
+        float mj = marr[j];
         // get xij
         get_xij(i, j, dim, xarr, xij, N);
         // compute rij
-        double rij = norm(xij, dim);
+        float rij = norm(xij, dim);
         if (rij < cut) rij = cut;
         // compute intermediate variable
         for (int k = 0; k < dim; k++){
-            tmp[k] = xij[k]*G/std::pow(rij, 3);
+            tmp[k] = xij[k]*G/pow(rij, 3);
         }
         // add to dv
         vec_add(dvarr+i*dim, dvarr+i*dim, tmp, 1.0, mj*dt, dim);
@@ -168,19 +168,19 @@ void compute_dv_omp(int dim, double *marr, double *xarr, double *dvarr,
     }
 }
 
-void vec_assign_const(double *a, double c, int dim){
+void vec_assign_const(float *a, float c, int dim){
     for (int i = 0; i < dim; i++){
         a[i] = c;
     }
 }
 
-void random_generate(double *xarr, double *marr, int N, int dim){
+void random_generate(float *xarr, float *marr, int N, int dim){
     for (int i = 0; i < N; i++){
         for (int j = 0; j < dim; j++){
-            double x = (double) rand() / RAND_MAX * 4 - 2;
+            float x = (float) rand() / RAND_MAX * 4 - 2;
             xarr[i*dim+j] = x;
         }
-        double m = (double) rand() / RAND_MAX + 1;
+        float m = (float) rand() / RAND_MAX + 1;
         marr[i] = m;
     }
 }

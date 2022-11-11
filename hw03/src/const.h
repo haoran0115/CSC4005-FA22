@@ -8,15 +8,15 @@ int    N = 2;    // number of particles
 int nsteps = 1e5; // number of steps
 int skip = 1; // stpes per frame
 int dim = 2;  // dimension
-double radius = 0.1; // minimum radius
-double G = 1;    // gravity constant
-double dt = 0.001; // time step
-double *marr;    // mass array
-double *xarr;    // position array
-double *xarr0;
-double *varr;    // velocity array
-double *dxarr;   // position shift array
-double *dvarr;   // velocity shift array
+float radius = 0.1; // minimum radius
+float G = 1;    // gravity constant
+float dt = 0.001; // time step
+float *marr;    // mass array
+float *xarr;    // position array
+float *xarr0;
+float *varr;    // velocity array
+float *dxarr;   // position shift array
+float *dvarr;   // velocity shift array
 
 // cuda parameters
 int Tx = 1;

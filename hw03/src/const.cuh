@@ -5,10 +5,10 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
-double *marr_d = NULL;
-double *xarr_d = NULL;
-double *xarr0_d = NULL;
-double *dxarr_d = NULL;
+float *marr_d = NULL;
+float *xarr_d = NULL;
+float *xarr0_d = NULL;
+float *dxarr_d = NULL;
 
 int Tx_cu;
 int Ty_cu;

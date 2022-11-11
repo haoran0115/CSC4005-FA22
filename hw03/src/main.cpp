@@ -14,7 +14,7 @@ void compute(){
     // main program
     for (int s = 0; s < nsteps; s++){
         // // verlet omp
-        // double *tmp;
+        // float *tmp;
         // vec_assign_const(dxarr, 0, N*dim);
         // verlet_at2_omp(dim, marr, xarr, xarr0, dxarr, dt, G, N, radius); // dx: acc
         // vec_add_omp(dxarr, dxarr, xarr, 1.0, 1.0, N*dim);         // dx: x(t)
@@ -41,9 +41,9 @@ void compute(){
 
         // gl points
         glBegin(GL_POINTS);
-        double xi;
-        double yi;
-        double xmin, xmax, ymin, ymax;
+        float xi;
+        float yi;
+        float xmin, xmax, ymin, ymax;
         for (int i = 0; i < N; i++){
             xi = xarr[i*dim+0];
             yi = xarr[i*dim+1];
@@ -60,15 +60,15 @@ void compute(){
 int main(int argc, char *argv[]){
     // initialization
     // N = 10000;
-    N = 10000;
+    N = 20000;
     nsteps = 10;
     // nsteps = 1;
     G = 0.1;
     dt = 0.005;
-    marr  = (double *)malloc(sizeof(double) * N);
-    xarr  = (double *)malloc(sizeof(double) * N * dim);
-    xarr0 = (double *)malloc(sizeof(double) * N * dim);
-    dxarr = (double *)malloc(sizeof(double) * N * dim);
+    marr  = (float *)malloc(sizeof(float) * N);
+    xarr  = (float *)malloc(sizeof(float) * N * dim);
+    xarr0 = (float *)malloc(sizeof(float) * N * dim);
+    dxarr = (float *)malloc(sizeof(float) * N * dim);
 
     // random generate initial condition
     random_generate(xarr, marr, N, dim);

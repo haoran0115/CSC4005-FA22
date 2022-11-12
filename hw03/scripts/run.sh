@@ -1,4 +1,3 @@
 #!/usr/bin/bash
-export OMP_NUM_THREADS=4
-./scripts/build.sh
-./build/bin/main
+./scripts/build.sh && ./build/bin/main.omp -nt 4 -n 300 --nsteps 100
+# ./scripts/build.sh && ./build/bin/main.omp -nt 4 -n 300 --nsteps 100

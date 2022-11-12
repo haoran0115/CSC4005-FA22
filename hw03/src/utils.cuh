@@ -5,7 +5,8 @@
 #include <cuda_device_runtime_api.h>
 #include <driver_types.h>
 
-void initialize_cu(float *marr, float *xarr, int N, int dim, int Tx, int Ty);
+void initialize_cu(float *marr, float *xarr, int N, int dim, int Tx, int Ty,
+    float xmin, float xmax, float ymin, float ymax);
 void compute_cu(float *xarr, int nsteps, int N, int dim, float G, float dt, float cut);
 void finalize_cu();
 

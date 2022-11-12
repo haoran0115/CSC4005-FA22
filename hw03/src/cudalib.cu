@@ -1,5 +1,6 @@
 #include "utils.cuh"
 #include "const.cuh"
+#define BLOCK_SIZE 1024
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -50,13 +51,21 @@ __global__ void vec_add_cu(float *a, float *b, float *c, int dim){
     }
 }
 
-__global__ void vec_sub_cu(float *a, float *b, float *c, int dim){
+__global__ void verlet_add_cu(float *a, float *b, float *c, int N, int dim,
+    int xmin, int xmax, int ymin, int ymax){
     int size = blockDim.x * gridDim.x;
     int idx = blockDim.x*blockIdx.x + threadIdx.x;
     int start_idx, end_idx;
-    partition_d(dim, size, idx, &start_idx, &end_idx);
+    partition_d(N, size, idx, &start_idx, &end_idx);
     for (int i = start_idx; i < end_idx; i++){
-        a[i] = b[i] - c[i];
+        float x = b[i*dim+0] + c[i*dim+0];
+        float y = b[i*dim+1] + c[i*dim+1];
+        if (x < xmin) x += 2 * (xmin - x);
+        else if (x > xmax) x += 2 * (xmax - x);
+        if (y < ymin) y += 2 * (ymin - y);
+        else if (y > ymax) y += 2 * (ymax - y);
+        a[i*dim+0] = x;
+        a[i*dim+1] = y;
     }
 }
 
@@ -70,52 +79,89 @@ __global__ void gather_dx_cu(float *a, float *b, float *c, int dim){
     }
 }
 
-__global__ void verlet_at2_cu(const int dim, float *marr, float *xarr, float *xarr0,
-    float *dxarr, float dt, float G, int N, float cut){
-    int size = blockDim.x * gridDim.x;
-    int idx = blockDim.x*blockIdx.x + threadIdx.x;
-    int start_idx, end_idx;
-    partition_d(N, size, idx, &start_idx, &end_idx);
-    // printf("%d %d\n", start_idx, end_idx);
-    // TODO: check later
-    for (int i = start_idx; i < end_idx; i++){
-        float tmp0 = 0.0;
-        float tmp1 = 0.0;
-        for (int j = 0; j < N; j++){
-            if (j!=i){
-            // get xij
-            float xij0 = xarr[j*dim+0] - xarr[i*dim+0];
-            float xij1 = xarr[j*dim+1] - xarr[i*dim+1];
-            // compute rij
-            float rij = sqrt(xij0*xij0 + xij1*xij1);
-            float fac = 1.0;
-            if (rij < cut) {
-                rij = cut;
-            }
-            tmp0 += xij0 * G/(rij*rij*rij) * marr[j]*dt*dt;
-            tmp1 += xij1 * G/(rij*rij*rij) * marr[j]*dt*dt;
-            }
-        }
-        dxarr[i*dim + 0] = tmp0;
-        dxarr[i*dim + 1] = tmp1;
-    }
-}
-
 __global__ void print_arr_cu(float *arr, int dim){
-    printf("parr_cu1\n");
     for (int i = 0; i < dim; i++){
         printf("%f ", arr[i]);
     }
     printf("\n");
-    printf("parr_cu2\n");
+}
+
+__device__ void print_arr_d(float *arr, int dim){
+    for (int i = 0; i < dim; i++){
+        printf("%f ", arr[i]);
+    }
+    printf("\n");
+}
+
+__global__ void verlet_at2_cu(const int dim, float *marr, float *xarr, float *xarr0,
+    float *dxarr, float dt, float G, int N, float cut){
+    // partition
+    int size = gridDim.x;
+    int idx = blockIdx.x;
+    int block_start_idx, block_end_idx;
+    partition_d(N, size, idx, &block_start_idx, &block_end_idx);
+    // if (threadIdx.x==0) printf("%d %d\n", block_start_idx, block_end_idx);
+    // shared memory
+    __shared__ float     marr_t[BLOCK_SIZE];
+    __shared__ float xarr_l_t[BLOCK_SIZE*2];
+    __shared__ float xarr_g_t[BLOCK_SIZE*2];
+    __shared__ float  dxarr_t[BLOCK_SIZE*2];
+    for (int i = block_start_idx; i < block_end_idx; i+=BLOCK_SIZE){
+        // tmp variables
+        float tmpx = 0.0;
+        float tmpy = 0.0;
+        if (i + threadIdx.x < block_end_idx){
+            // get local coords
+            xarr_l_t[threadIdx.x*dim+0] = xarr[i*dim+threadIdx.x*dim+0];
+            xarr_l_t[threadIdx.x*dim+1] = xarr[i*dim+threadIdx.x*dim+1];
+        }
+        __syncthreads();
+        // N loop
+        for (int j = 0; j < N; j+=BLOCK_SIZE){
+            if (threadIdx.x + j < N){
+                marr_t[threadIdx.x] = marr[threadIdx.x+j];
+                xarr_g_t[threadIdx.x*dim+0] = xarr[threadIdx.x*dim+j*dim+0];
+                xarr_g_t[threadIdx.x*dim+1] = xarr[threadIdx.x*dim+j*dim+1];
+            }
+            __syncthreads();
+            // if (blockIdx.x==0 && threadIdx.x==0 && j==0) print_arr_d(xarr_g_t, 8);
+            for (int k = 0; k < BLOCK_SIZE; k++){
+            if (k + j < N && threadIdx.x + j < N){
+                // compute xij
+                float xij0 = xarr_g_t[k*dim+0] - xarr_l_t[threadIdx.x*dim+0];
+                float xij1 = xarr_g_t[k*dim+1] - xarr_l_t[threadIdx.x*dim+1];
+                float rij = sqrt(xij0*xij0 + xij1*xij1);
+                if (rij < cut) rij = cut;
+                tmpx += xij0/(rij*rij*rij) * marr_t[k]* G*dt*dt;
+                tmpy += xij1/(rij*rij*rij) * marr_t[k]* G*dt*dt;
+            }}
+            // assign value to shared memory
+        }
+        if (i + threadIdx.x < block_end_idx){
+            // assign value back to global memory 
+            dxarr_t[threadIdx.x*dim+0] = tmpx;
+            dxarr_t[threadIdx.x*dim+1] = tmpy;
+        }
+        __syncthreads();
+        if (i + threadIdx.x < block_end_idx){
+            dxarr[threadIdx.x*dim+i*dim+0] = dxarr_t[threadIdx.x*dim+0];
+            dxarr[threadIdx.x*dim+i*dim+1] = dxarr_t[threadIdx.x*dim+1];
+        }
+        __syncthreads();
+    }
 }
 
 // cuda initialize program
-void initialize_cu(float *marr, float *xarr, int N, int dim, int Tx, int Ty){
+void initialize_cu(float *marr, float *xarr, int N, int dim, int Tx, int Ty,
+    float xmin, float xmax, float ymin, float ymax){
     printf("cuda initialize\n");
     // cuda parameters
     Tx_cu = Tx;
     Ty_cu = Ty;
+    xmin_d = xmin;
+    xmax_d = xmax;
+    ymin_d = ymin;
+    ymax_d = ymax;
     // cuda memory allocation
     gpuErrchk( cudaMalloc((void **) &marr_d, sizeof(float)*N));
     gpuErrchk( cudaMalloc((void **) &xarr_d, sizeof(float)*N*dim));
@@ -143,19 +189,24 @@ void compute_cu(float *xarr, int nsteps, int N, int dim, float G, float dt, floa
     // verlet cuda main program
     float *tmp;
     cudaMemset(dxarr_d, 0x00, sizeof(float)*N*dim);
-    verlet_at2_cu<<<Tx_cu,Ty_cu>>>(dim, marr_d, xarr_d, xarr0_d, dxarr_d, dt, G, N, cut); // dx: acc
+    cudaDeviceSynchronize();
+    verlet_at2_cu<<<32,BLOCK_SIZE>>>(dim, marr_d, xarr_d, xarr0_d, dxarr_d, dt, G, N, cut); // dx: acc
+    cudaDeviceSynchronize();
     gather_dx_cu<<<Tx_cu,Ty_cu>>>(dxarr_d, xarr_d, xarr0_d, N*dim);
+    cudaDeviceSynchronize();
     tmp = xarr_d;
     xarr_d = xarr0_d;
     xarr0_d = tmp;
-    vec_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N*dim);
+    verlet_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N, dim, xmin_d, xmax_d, ymin_d, ymax_d);
+    // vec_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N*dim);
 
     cudaDeviceSynchronize();
-    // cudaMemcpy(xarr, xarr_d, sizeof(float)*N*dim, cudaMemcpyDeviceToHost);
+    cudaMemcpy(xarr, xarr_d, sizeof(float)*N*dim, cudaMemcpyDeviceToHost);
 
     #ifdef GUI
     // copy x to host
     cudaMemcpy(xarr, xarr_d, sizeof(float)*N*dim, cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
     #endif
 }
 

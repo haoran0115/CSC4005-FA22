@@ -10,7 +10,8 @@ option(GUI "OPENGL Rendering" OFF)
 # omp flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
-# include & requirements
+# libraries
+add_library(cudalib cudalib.cu)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 include_directories(
     ${MPI_INCLUDE_PATH}
@@ -19,24 +20,43 @@ include_directories(
 link_libraries(
     ${MPI_LIBRARIES}
     ${CUDA_LIBRAIRES}
+    cudalib
 )
 
+
+# targets & libs
+add_executable(main.seq main.cpp)
+add_executable(main.omp main.cpp)
+add_executable(main.cu main.cpp)
+target_compile_definitions(main.omp PUBLIC OMP)
+target_compile_definitions(main.cu PUBLIC CUDA)
 
 # opengl & glut
 if(GUI)
     find_package(OpenGL REQUIRED)
     find_package(GLUT REQUIRED)
     include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_DINCLUDE_DIRS})
-    add_definitions(-DGUI)
-    link_libraries(
+    add_executable(main.omp.gui main.cpp)
+    add_executable(main.cu.gui main.cpp)
+    add_executable(main.seq.gui main.cpp)
+    target_compile_definitions(main.seq.gui PUBLIC GUI)
+    target_compile_definitions(main.omp.gui PUBLIC GUI OMP)
+    target_compile_definitions(main.cu.gui PUBLIC GUI CUDA)
+    target_link_libraries(
+        main.omp.gui
+        ${OPENGL_LIBRARIES}
+        ${GLUT_LIBRARIES}
+    )
+    target_link_libraries(
+        main.cu.gui
+        ${OPENGL_LIBRARIES}
+        ${GLUT_LIBRARIES}
+    )
+    target_link_libraries(
+        main.seq.gui
         ${OPENGL_LIBRARIES}
         ${GLUT_LIBRARIES}
     )
 endif()
 
-# targets & libs
-add_library(cudalib cudalib.cu)
-add_executable(main main.cpp)
-
-target_link_libraries(main cudalib)
 

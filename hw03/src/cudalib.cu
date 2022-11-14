@@ -198,7 +198,6 @@ void compute_cu(float *xarr, int nsteps, int N, int dim, float G, float dt, floa
     xarr_d = xarr0_d;
     xarr0_d = tmp;
     verlet_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N, dim, xmin_d, xmax_d, ymin_d, ymax_d);
-    // vec_add_cu<<<Tx_cu,Ty_cu>>>(xarr_d, xarr0_d, dxarr_d, N*dim);
 
     cudaDeviceSynchronize();
     cudaMemcpy(xarr, xarr_d, sizeof(float)*N*dim, cudaMemcpyDeviceToHost);

@@ -26,6 +26,10 @@ float ymax =  10;
 int record = 0;
 int nt = 1;
 
+// mpi parameters
+int size, rank;
+float *xarr_copy;
+
 // cuda parameters
 int Tx = 1;
 int Ty = 1;

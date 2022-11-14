@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <memory.h>
-#include <omp.h>
 #include <chrono>
 #include "const.h"
 #include "utils.h"
@@ -20,25 +19,19 @@ void compute(){
         // verlet omp
         #ifdef OMP
         if (s==0) printf("Start OpenMP version.\n");
-        compute_omp(xarr, xarr0, dxarr, N, dim, G, dt, radius);
+        compute_omp(&xarr, &xarr0, dxarr, marr, N, dim, G, dt, radius);
         #elif CUDA
         if (s==0) printf("Start CUDA version.\n");
-        // verlet cuda
         compute_cu(xarr, nsteps, N, dim, G, dt, radius);
         #elif PTH
         if (s==0) printf("Start Pthread version.\n");
+        compute_pth(&xarr, &xarr0, dxarr, marr, N, dim, G, dt, radius, nt);
         #else
         if (s==0) printf("Start sequential version.\n");
-        compute_seq(xarr, xarr0, dxarr, N, dim, G, dt, radius);
+        compute_seq(&xarr, &xarr0, dxarr, marr, N, dim, G, dt, radius);
         #endif
 
 
-        // check 
-        // print_arr(xarr, N*dim);
-        // if (s==nsteps-1) print_arr(xarr, 8);
-
-        // opengl
-        #ifdef GUI
         // calculating fps
         int step = 200;
         if (s%step==0 && s%(step*2)!=0) t1 = std::chrono::high_resolution_clock::now();
@@ -47,6 +40,9 @@ void compute(){
             t = std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count();
             printf("fps: %f frame/s\n", step/t);
         }
+
+        // opengl
+        #ifdef GUI
         glClear(GL_COLOR_BUFFER_BIT);
         glColor3f(1.0f, 0.0f, 0.0f);
         glPointSize(2.0f);
@@ -168,9 +164,11 @@ int main(int argc, char *argv[]){
     free(xarr0);
     free(dxarr);
 
+    #ifdef CUDA
     // cudafree
     finalize_cu();
     cudaDeviceSynchronize();
+    #endif
 
     return 0;
 }

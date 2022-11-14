@@ -6,6 +6,7 @@
                 "${workspaceFolder}/**",
                 "/usr/include/mpich-3.2-x86_64",
                 "/usr/local/cuda/include",
+                "/usr/include/openmpi-x86_64"
             ],
             "defines": [
                 "GUI"

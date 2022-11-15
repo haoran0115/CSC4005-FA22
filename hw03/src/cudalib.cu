@@ -106,6 +106,8 @@ __global__ void verlet_at2_cu(const int dim, float *marr, float *xarr, float *xa
     __shared__ float xarr_l_t[BLOCK_SIZE*2];
     __shared__ float xarr_g_t[BLOCK_SIZE*2];
     __shared__ float  dxarr_t[BLOCK_SIZE*2];
+    // G*dt*dt factor
+    float fac = G*dt*dt;
     for (int i = block_start_idx; i < block_end_idx; i+=BLOCK_SIZE){
         // tmp variables
         float tmpx = 0.0;
@@ -132,8 +134,8 @@ __global__ void verlet_at2_cu(const int dim, float *marr, float *xarr, float *xa
                 float xij1 = xarr_g_t[k*dim+1] - xarr_l_t[threadIdx.x*dim+1];
                 float rij = sqrt(xij0*xij0 + xij1*xij1);
                 if (rij < cut) rij = cut;
-                tmpx += xij0/(rij*rij*rij) * marr_t[k]* G*dt*dt;
-                tmpy += xij1/(rij*rij*rij) * marr_t[k]* G*dt*dt;
+                tmpx += xij0/(rij*rij*rij) * marr_t[k]*fac;
+                tmpy += xij1/(rij*rij*rij) * marr_t[k]*fac;
             }}
             // assign value to shared memory
         }

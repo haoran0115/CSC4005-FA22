@@ -6,6 +6,8 @@
 #include <mpi.h>
 #include <omp.h>
 #include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 void print_info(int N, int nsteps){
     printf("Name: Haoran Sun\n");
@@ -393,4 +395,16 @@ void arr_check_if_identical(float *a, float *b, int dim){
             exit(1);
         }
     }
+}
+
+void runtime_record(char *jobtype, int N, int nt, double fps){
+    const char *folder = "data";
+    mkdir(folder, 0777);
+    FILE* outfile;
+    char filebuff[200];
+    snprintf(filebuff, sizeof(filebuff), "./%s/runtime_%s.txt", folder, jobtype);
+    outfile = fopen(filebuff, "a");
+    fprintf(outfile, "%10d %5d %10.4f\n", N, nt, fps);
+    fclose(outfile);
+    printf("Runtime added in %s.\n", filebuff);
 }

@@ -11,13 +11,15 @@
 
 void compute(){
     // main program
+    char type[] = "mpi";
     int start_idx, end_idx;
     int jobsize = N / size;
+    auto t0 = std::chrono::high_resolution_clock::now();
     auto t1 = std::chrono::high_resolution_clock::now();
     auto t2 = std::chrono::high_resolution_clock::now();
     double t;
     partition(N, size, rank, &start_idx, &end_idx);
-    printf("rank %d start_idx %d end_idx %d\n", rank, start_idx, end_idx);
+    if (rank == 0) printf("Start MPI version.\n");
     for (int s = 0; s < nsteps; s++){
         // transfer data
         MPI_Bcast(xarr, N*dim, MPI_FLOAT, 0, MPI_COMM_WORLD);
@@ -83,6 +85,14 @@ void compute(){
             #endif
         }
     }
+
+    // record data
+    if (rank==0 && record==1){
+        t2 = std::chrono::high_resolution_clock::now();
+        t = std::chrono::duration_cast<std::chrono::duration<double>>(t2-t0).count();
+        double fps = nsteps / t;
+        runtime_record(type, N, nt, fps);
+    }
 }
 
 int main(int argc, char* argv[]){ 
@@ -129,6 +139,9 @@ int main(int argc, char* argv[]){
             record = std::stoi(num);
         }
     }
+
+    // print info
+    if (rank == 0) print_info(N, nsteps);
 
     // initialization
     // array allocation

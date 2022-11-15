@@ -31,6 +31,6 @@ int size, rank;
 float *xarr_copy;
 
 // cuda parameters
-int Tx = 1;
-int Ty = 1;
+int Tx = 16;
+int Ty = 16;
 

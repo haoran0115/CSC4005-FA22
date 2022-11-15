@@ -51,7 +51,16 @@
         "random": "cpp",
         "string": "cpp",
         "system_error": "cpp",
-        "__tree": "cpp"
+        "__tree": "cpp",
+        "hash_map": "cpp",
+        "strstream": "cpp",
+        "bitset": "cpp",
+        "list": "cpp",
+        "iomanip": "cpp",
+        "mutex": "cpp",
+        "cfenv": "cpp",
+        "typeindex": "cpp",
+        "__nullptr": "cpp"
     },
     "grammarly.selectors": [
         {

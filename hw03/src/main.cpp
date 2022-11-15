@@ -11,29 +11,48 @@
 #endif
 
 void compute(){
-    // main program
+    // running type buffer
+    char type[1000];
+    // start timing
+    auto t0 = std::chrono::high_resolution_clock::now();
     auto t1 = std::chrono::high_resolution_clock::now();
     auto t2 = std::chrono::high_resolution_clock::now();
     double t;
+    // main program
     for (int s = 0; s < nsteps; s++){
         // verlet omp
         #ifdef OMP
-        if (s==0) printf("Start OpenMP version.\n");
+        if (s==0) {
+            printf("Start OpenMP version.\n");
+            strcpy(type, "omp");
+        }
         compute_omp(&xarr, &xarr0, dxarr, marr, N, dim, G, dt, radius);
         #elif CUDA
-        if (s==0) printf("Start CUDA version.\n");
+        if (s==0) {
+            printf("Start CUDA version.\n");
+            strcpy(type, "cuda");
+        }
         compute_cu(xarr, nsteps, N, dim, G, dt, radius);
         #elif PTH
-        if (s==0) printf("Start Pthread version.\n");
+        if (s==0) {
+            printf("Start Pthread version.\n");
+            strcpy(type, "pth");
+        }
         compute_pth(&xarr, &xarr0, dxarr, marr, N, dim, G, dt, radius, nt);
         #else
-        if (s==0) printf("Start sequential version.\n");
+        if (s==0) {
+            printf("Start sequential version.\n");
+            strcpy(type, "seq");
+        }
         compute_seq(&xarr, &xarr0, dxarr, marr, N, dim, G, dt, radius);
         #endif
 
 
         // calculating fps
         int step = 200;
+        #ifdef GUI
+        step = 30;
+        #endif
         if (s%step==0 && s%(step*2)!=0) t1 = std::chrono::high_resolution_clock::now();
         else if (s%(step*2)==0 && s!=0) {
             t2 = std::chrono::high_resolution_clock::now();
@@ -62,6 +81,14 @@ void compute(){
         glFlush();
         glutSwapBuffers();
         #endif
+    }
+
+    // record data
+    if (record==1){
+        t2 = std::chrono::high_resolution_clock::now();
+        t = std::chrono::duration_cast<std::chrono::duration<double>>(t2-t0).count();
+        double fps = nsteps / t;
+        runtime_record(type, N, nt, fps);
     }
 }
 
@@ -101,6 +128,14 @@ int main(int argc, char *argv[]){
         if (strcmp(buff, "--record")==0){
             std::string num(argv[i+1]);
             record = std::stoi(num);
+        }
+        if (strcmp(buff, "--Tx")==0){
+            std::string num(argv[i+1]);
+            Tx = std::stoi(num);
+        }
+        if (strcmp(buff, "--Ty")==0){
+            std::string num(argv[i+1]);
+            Ty = std::stoi(num);
         }
     }
     // omp options

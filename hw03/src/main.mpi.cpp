@@ -3,8 +3,6 @@
 #include <iostream>
 #include <memory.h>
 #include <chrono>
-#include <mpi.h>
-#include <omp.h>
 #include "const.h"
 #include "utils.h"
 #ifdef GUI
@@ -27,14 +25,16 @@ void compute(){
 
         // calculate dx
         vec_assign_const(dxarr, 0, N*dim);
-        verlet_at2_omp_part(dim, marr, xarr, xarr0, dxarr, dt, G, N, radius, start_idx, end_idx);
+        verlet_at2_part_omp(dim, marr, xarr, xarr0, dxarr, dt, G, N, radius, start_idx, end_idx);
+        // verlet_at2_part(dim, marr, xarr, xarr0, dxarr, dt, G, N, radius, start_idx, end_idx);
         vec_add_part(dxarr, dxarr, xarr, 1.0, 1.0, N*dim, start_idx*dim, end_idx*dim);
         vec_add_part(dxarr, dxarr, xarr0, 1.0, -1.0, N*dim, start_idx*dim, end_idx*dim);
         float *tmp = xarr;
         xarr = xarr0;
         xarr0 = tmp;
         MPI_Barrier(MPI_COMM_WORLD);
-        verlet_add_omp_part(xarr, xarr0, dxarr, N, dim, xmin, xmax, ymin, ymax, start_idx, end_idx);
+        verlet_add_part_omp(xarr, xarr0, dxarr, N, dim, xmin, xmax, ymin, ymax, start_idx, end_idx);
+        // verlet_add_part(xarr, xarr0, dxarr, N, dim, xmin, xmax, ymin, ymax, start_idx, end_idx);
 
         // transfer data
         if (rank==0) MPI_Gather(MPI_IN_PLACE, jobsize*dim, MPI_FLOAT, xarr+start_idx*dim, jobsize*dim, MPI_FLOAT, 0, MPI_COMM_WORLD);
@@ -148,10 +148,8 @@ int main(int argc, char* argv[]){
     MPI_Bcast(xarr0, N*dim, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
     // omp options
-    #ifdef OMP
     omp_set_dynamic(0);
     omp_set_num_threads(nt);
-    #endif
 
     // main computing program
     if (rank==0){

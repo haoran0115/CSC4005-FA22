@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <math.h>
+#include <mpi.h>
 #include <omp.h>
 #include <pthread.h>
 
@@ -162,32 +163,38 @@ void verlet_at2_part(int dim, float *marr, float *xarr, float *xarr0,
     }
 }
 
-void verlet_at2_omp_part(int dim, float *marr, float *xarr, float *xarr0,
+void verlet_at2_part_omp(int dim, float *marr, float *xarr, float *xarr0,
     float *dxarr, float dt, float G, int N, float cut,
     int start_idx, int end_idx){
-    for (int i = start_idx; i < end_idx; i++){
-        float tmp[dim];
-        for (int j = 0; j < dim; j++) tmp[j] = 0;
-        for (int j = 0; j < N; j++){
-            if (j!=i){
-            float xij[dim];
-            float mi = marr[i];
-            float mj = marr[j];
-            // get xij
-            get_xij(i, j, dim, xarr, xij, N);
-            // compute rij
-            float rij = norm(xij, dim);
-            float fac = 1.0;
-            if (rij < cut) {
-                rij = cut;
+    #pragma omp parallel
+    {
+        int omp_start_idx, omp_end_idx;
+        partition(end_idx-start_idx, omp_get_num_threads(), omp_get_thread_num(),
+            &omp_start_idx, &omp_end_idx);
+        for (int i = start_idx+omp_start_idx; i < start_idx+omp_end_idx; i++){
+            float tmp[dim];
+            for (int j = 0; j < dim; j++) tmp[j] = 0;
+            for (int j = 0; j < N; j++){
+                if (j!=i){
+                float xij[dim];
+                float mi = marr[i];
+                float mj = marr[j];
+                // get xij
+                get_xij(i, j, dim, xarr, xij, N);
+                // compute rij
+                float rij = norm(xij, dim);
+                float fac = 1.0;
+                if (rij < cut) {
+                    rij = cut;
+                }
+                // compute intermediate variable
+                for (int k = 0; k < dim; k++){
+                    tmp[k] += xij[k]*G/pow(rij, 3)*mj*dt*dt;
+                }
+                }
             }
-            // compute intermediate variable
-            for (int k = 0; k < dim; k++){
-                tmp[k] += xij[k]*G/pow(rij, 3)*mj*dt*dt;
-            }
-            }
+            vec_add(dxarr+i*dim, dxarr+i*dim, tmp, 1.0, 1.0, dim);
         }
-        vec_add(dxarr+i*dim, dxarr+i*dim, tmp, 1.0, 1.0, dim);
     }
 }
 
@@ -235,17 +242,23 @@ void verlet_add_part(float *a, float *b, float *c, int N, int dim,
     }
 }
 
-void verlet_add_omp_part(float *a, float *b, float *c, int N, int dim, 
+void verlet_add_part_omp(float *a, float *b, float *c, int N, int dim, 
     int xmin, int xmax, int ymin, int ymax, int start_idx, int end_idx){
-    for (int i = start_idx; i < end_idx; i++){
-        float x = b[i*dim+0] + c[i*dim+0];
-        float y = b[i*dim+1] + c[i*dim+1];
-        if (x < xmin) x += 2 * (xmin - x);
-        else if (x > xmax) x += 2 * (xmax - x);
-        if (y < ymin) y += 2 * (ymin - y);
-        else if (y > ymax) y += 2 * (ymax - y);
-        a[i*dim+0] = x;
-        a[i*dim+1] = y;
+    #pragma omp parallel
+    {
+        int omp_start_idx, omp_end_idx;
+        partition(end_idx-start_idx, omp_get_num_threads(), omp_get_thread_num(),
+            &omp_start_idx, &omp_end_idx);
+        for (int i = start_idx+omp_start_idx; i < start_idx+omp_end_idx; i++){
+            float x = b[i*dim+0] + c[i*dim+0];
+            float y = b[i*dim+1] + c[i*dim+1];
+            if (x < xmin) x += 2 * (xmin - x);
+            else if (x > xmax) x += 2 * (xmax - x);
+            if (y < ymin) y += 2 * (ymin - y);
+            else if (y > ymax) y += 2 * (ymax - y);
+            a[i*dim+0] = x;
+            a[i*dim+1] = y;
+        }
     }
 }
 

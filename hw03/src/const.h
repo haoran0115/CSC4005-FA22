@@ -5,7 +5,7 @@
 
 // global variables
 // computing-related constants
-int         N = 30;   // number of particles
+int        N = 200;   // number of particles
 int   nsteps = 1e5;   // number of steps
 int        dim = 2;   // dimension
 float radius = 0.01;   // gravity cut-off

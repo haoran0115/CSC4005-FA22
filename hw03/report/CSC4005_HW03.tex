@@ -21,6 +21,9 @@
 \usepackage{titlesec}
 \usepackage{subcaption}
 
+% less hyphens, similar to tolerance?
+\usepackage{microtype}
+
 % allow H option of figure
 \usepackage{float}
 
@@ -242,7 +245,10 @@ using OpenMP.
 Despite MPI version written separately in \lstinline|src/main.mpi.cpp|, 
 the main program of other version are all wrapped
 in \lstinline|src/main.cpp|.
-Particularly, CUDA functions are compiled in a separated library.
+Particularly, CUDA functions are compiled in a separated library
+\lstinline|build/lib/libcudalib.a|.
+
+One can refer to \ref{fig:flowchart} to understand the program design.
 
 
 \subsection{Usage}
@@ -271,7 +277,7 @@ One can directly execute \lstinline|build/bin/main*.gui| for a visualized demons
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.33\textwidth]{../demo.png}
+    \includegraphics[width=0.5\textwidth]{../demo.png}
     \caption{Sample GUI window}
     \label{fig:image}
 \end{figure}
@@ -288,10 +294,10 @@ is to set CUDA 1-D grid size and block size.
 mpirun -np 10 ./build/bin/main.mpi -n 100 --nsteps 10000 --record 1
 \end{lstlisting}
 \begin{remark}
-To execute MPI + OpenMP hybrid program, one just append \lstinline|-nt [n]| parameters
+To execute MPI + OpenMP hybrid program, one can just append \lstinline|-nt [n]| parameters
 when executing the MPI program.
 For example, the following line initializes a program with 10 MPI process,
-and each process has 2 OpenMP threads.
+and each process has 2 OpenMP threads, which have $10\times 2=20$ threads in total.
 \begin{lstlisting}[style=sh]
 mpirun -np 10 ./build/bin/main.mpi -nt 2
 \end{lstlisting}
@@ -357,7 +363,7 @@ Notably, the gpu shared memory is used to accelerate the read operations.
 (please refer to \lstinline|__shared| type and \lstinline|__syncthreads| function
 in \lstinline|cudalib.cu|).
 According to NVIDIA, the memory access on shared memory is
-approximately 100$x$ faster than the global (\lstinline|__device__|) memory access.
+approximately 100$\times$ faster than the global (\lstinline|__device__|) memory access.
 
 \begin{figure}[t!]
     \centering
@@ -365,6 +371,80 @@ approximately 100$x$ faster than the global (\lstinline|__device__|) memory acce
     \caption{CUDA fps vs $n$ plot.}
     \label{fig:fps-dim-gpu}
 \end{figure}
+
+
+For example, a naive vector addition in CUDA could be written as
+\begin{lstlisting}[style=cpp]
+__global__ void VecAdd(int *a, int *b, int *c, long int dim){
+    // thread partition
+    int start_idx = dim / (blockDim.x * gridDim.x) * threadIdx.x;
+    int end_idx   = dim / (blockDim.x * gridDim.x) * (threadIdx.x+1);
+    if (threadIdx.x+1==blockDim.x) end_idx = dim;
+    // vector add
+    for (int i = 0; i < dim; i++){
+        c[i] = a[i] + b[i];
+    }
+}
+\end{lstlisting}
+During the calculation, each thread in GPU will require to
+access the memory independently.
+When the overall thread number is large, the memory miss could
+cost a huge amount of time.
+However, in CUDA, we can split those threads into different blocks:
+for example, if one call a kernel function \lstinline|kernel|
+by \lstinline|kernel<<<16,64>>>()|, then he is asking CUDA
+to generate 16 blocks where each block has 64 threads, overall 
+$16\times 64=1024$ threads.
+Similarly, \lstinline|kernel<<<1,1024>>>()| also calls the function
+with 1024 threads.
+In principle, \lstinline|VecAdd<<<16,64>>>(a, b, c, dim)| and
+\lstinline|VecAdd<<<1,1024>>>(a, b, c, dim)| has no difference.
+Now consider, if we can let threads in each block, share a 
+part of memory, then can it reduce the time cost by memory miss?
+Have a look at the following function
+\begin{lstlisting}[style=cpp]
+#define BLOCKSIZE 64
+__global__ void sharedMemVecAdd(int *a, int *b, int *c, long int dim){
+    // block partition
+    int block_start_idx  = dim / gridDim.x * blockIdx.x;
+    int block_end_idx    = dim / gridDim.x * (blockIdx.x + 1);
+    if (blockIdx.x+1==gridDim.x) block_end_idx = dim;
+    int total_task       = block_end_idx - block_start_idx;
+    // shared memory partition
+    int num_iter = (total_task + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    // block-wise shared memory
+    __shared__ int a_t[BLOCK_SIZE*2];
+    __shared__ int b_t[BLOCK_SIZE];
+    __shared__ int c_t[BLOCK_SIZE];
+    __syncthreads();
+
+    // main program
+    for (int i = 0; i < num_iter; i++){
+    if (threadIdx.x+i*BLOCK_SIZE < block_end_idx){
+        // thread
+        // copy data
+        a_t[threadIdx.x] = a[block_start_idx + threadIdx.x + BLOCK_SIZE*i];
+        b_t[threadIdx.x] = b[block_start_idx + threadIdx.x + BLOCK_SIZE*i];
+        __syncthreads();
+
+        // vector add
+        c_t[threadIdx.x] = a_t[threadIdx.x] + b_t[threadIdx.x];
+
+
+        // copy data back
+        c[block_start_idx + threadIdx.x + BLOCK_SIZE*i] = c_t[threadIdx.x];
+        __syncthreads();
+    }}
+}
+\end{lstlisting}
+One should convince himself that \lstinline|sharedMemVecAdd<<<16,BLOCKSIZE>>>(a, b, c, dim)|
+do the exact same work as \lstinline|VecAdd|.
+So what is the difference here?
+In each block, CUDA will create a shared memory, that is a fast memory accessible
+by ALL threads within this block.
+During the computation, the block will first read a memory block,
+then perform computation; after all threads finish the computation,
+the threads will write data back to the global memory.
 
 
 \section{Conclusion}
@@ -383,10 +463,18 @@ the calculation.
 
 \begin{figure}[h!]
     \centering
+    \includegraphics[width=\textwidth]{../flowchart.drawio.pdf}
+    \caption{Program flowchart}
+    \label{fig:flowchart}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
     \includegraphics[width=0.66\textwidth]{../analysis/heatmap-rate-cpu.pdf}
     \caption{CUDA fps vs $n$ plot.}
     \label{fig:heatmap-rate-cpu}
 \end{figure}
+
 
 \clearpage
 \newpage

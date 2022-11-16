@@ -91,7 +91,7 @@ void compute(){
         t2 = std::chrono::high_resolution_clock::now();
         t = std::chrono::duration_cast<std::chrono::duration<double>>(t2-t0).count();
         double fps = nsteps / t;
-        runtime_record(type, N, nt, fps);
+        runtime_record(type, N, size, fps);
     }
 }
 

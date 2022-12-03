@@ -23,9 +23,10 @@ void compute(){
         #ifdef OMP
         update_omp(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire); 
         #elif PTH
-        update_pth(&temp_arr, &temp_arr0, x_arr, y_arr, DIM, T_fire,
+        update_pth(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire,
             thread_arr, args_arr, nt);
         #elif CUDA
+        update_cu(temp_arr0);
         #else
         update_seq(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire); 
         #endif
@@ -94,13 +95,6 @@ int main(int argc, char *argv[]){
     pix = (GLubyte *)malloc(sizeof(GLubyte)*RES*RES*3);
     #endif
 
-    #ifdef OMP
-    omp_set_num_threads(nt);
-    #elif PTH
-    thread_arr = (pthread_t *)malloc(sizeof(pthread_t)*nt);
-    args_arr = (PthArgs *)malloc(sizeof(PthArgs) * nt);
-    #else
-    #endif
     // assign mesh
     for (int i = 0; i < DIM; i++){
         x_arr[i] = (xmax-xmin) * i/DIM + xmin;
@@ -119,6 +113,16 @@ int main(int argc, char *argv[]){
         }
     }}
     memcpy(temp_arr0, temp_arr, sizeof(float)*DIM*DIM);
+
+    #ifdef OMP
+    omp_set_num_threads(nt);
+    #elif PTH
+    thread_arr = (pthread_t *)malloc(sizeof(pthread_t)*nt);
+    args_arr = (PthArgs *)malloc(sizeof(PthArgs)*nt);
+    #elif CUDA
+    initialize_cu(temp_arr, temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire,
+        Tx, Ty);
+    #endif
     
     // // check arr status
     // print_arr(x_arr, DIM);
@@ -157,6 +161,7 @@ int main(int argc, char *argv[]){
     free(args_arr);
     free(thread_arr);
     #elif CUDA
+    finalize_cu();
     #else
     #endif
 

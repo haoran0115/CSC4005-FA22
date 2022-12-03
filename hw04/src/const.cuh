@@ -7,5 +7,10 @@
 
 float *temp_arr_d = NULL;
 float *temp_arr0_d = NULL;
-bool *fire_arr = NULL;
+bool *fire_arr_d = NULL;
+int DIM_d;
+float T_fire_d;
+
+int Tx_d;
+int Ty_d;
 

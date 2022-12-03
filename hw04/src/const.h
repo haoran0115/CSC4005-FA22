@@ -24,6 +24,10 @@ int nsteps = 100;
 int record = 0;
 int nt = 1;
 
+// pthread parameters
+pthread_t *thread_arr = NULL;
+PthArgs *args_arr = NULL;
+
 // mpi parameters
 int size, rank;
 

@@ -27,11 +27,11 @@ link_libraries(
 # targets & libs
 add_executable(main.seq main.cpp)
 add_executable(main.omp main.cpp)
-# add_executable(main.pth main.cpp)
+add_executable(main.pth main.cpp)
 # add_executable(main.cu main.cpp)
 # add_executable(main.mpi main.mpi.cpp)
 target_compile_definitions(main.omp PUBLIC OMP)
-# target_compile_definitions(main.pth PUBLIC PTH)
+target_compile_definitions(main.pth PUBLIC PTH)
 # target_compile_definitions(main.cu PUBLIC CUDA)
 
 # opengl & glut
@@ -42,14 +42,14 @@ if(GUI)
     link_libraries(${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
     add_executable(main.seq.gui main.cpp)
     add_executable(main.omp.gui main.cpp)
+    add_executable(main.pth.gui main.cpp)
     # add_executable(main.cu.gui main.cpp)
-    # add_executable(main.pth.gui main.cpp)
     # add_executable(main.mpi.gui main.mpi.cpp)
     target_compile_definitions(main.seq.gui PUBLIC GUI)
     target_compile_definitions(main.omp.gui PUBLIC GUI OMP)
+    target_compile_definitions(main.pth.gui PUBLIC GUI PTH)
     # target_compile_definitions(main.mpi.gui PUBLIC GUI)
     # target_compile_definitions(main.cu.gui PUBLIC GUI CUDA)
-    # target_compile_definitions(main.pth.gui PUBLIC GUI PTH)
 endif()
 
 

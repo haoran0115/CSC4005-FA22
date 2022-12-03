@@ -21,13 +21,17 @@ void compute(){
     for (int s = 0; s < nsteps; s++){
         // main compute program
         #ifdef OMP
-        update_omp(&temp_arr, &temp_arr0, x_arr, y_arr, DIM, T_fire); 
+        update_omp(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire); 
+        #elif PTH
+        update_pth(&temp_arr, &temp_arr0, x_arr, y_arr, DIM, T_fire,
+            thread_arr, args_arr, nt);
+        #elif CUDA
         #else
-        update_seq(&temp_arr, &temp_arr0, x_arr, y_arr, DIM, T_fire); 
+        update_seq(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire); 
         #endif
 
         // calculating fps
-        int step = 30;
+        int step = 60;
         if (s%step==0 && s%(step*2)!=0) t1 = std::chrono::high_resolution_clock::now();
         else if (s%(step*2)==0 && s!=0) {
             t2 = std::chrono::high_resolution_clock::now();
@@ -92,6 +96,9 @@ int main(int argc, char *argv[]){
 
     #ifdef OMP
     omp_set_num_threads(nt);
+    #elif PTH
+    thread_arr = (pthread_t *)malloc(sizeof(pthread_t)*nt);
+    args_arr = (PthArgs *)malloc(sizeof(PthArgs) * nt);
     #else
     #endif
     // assign mesh
@@ -143,6 +150,15 @@ int main(int argc, char *argv[]){
     free(fire_arr);
     free(x_arr);
     free(y_arr);
+
+    #ifdef PTH
+    for (int i = 0; i < nt; i++)
+        pthread_join(thread_arr[i], NULL);
+    free(args_arr);
+    free(thread_arr);
+    #elif CUDA
+    #else
+    #endif
 
     return 0;
 }

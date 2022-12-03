@@ -33,7 +33,7 @@ bool is_fire(float x, float y){
     return (x*x + y*y <= 1);
 }
 
-void update_seq(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float *y_arr, int DIM,
+void update_seq(float **temp_arr_ptr, float **temp_arr0_ptr, bool *fire_arr, float *x_arr, float *y_arr, int DIM,
     float T_fire){
     float *temp_arr = *temp_arr_ptr;
     float *temp_arr0 = *temp_arr0_ptr;
@@ -45,7 +45,7 @@ void update_seq(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float
         xs = temp_arr0[i*DIM+j-1];
         xd = temp_arr0[(i+1)*DIM+j];
         temp_arr[i*DIM+j] = (xw + xa + xs + xd) / 4;
-        if (is_fire(x_arr[i], y_arr[j])) 
+        if (fire_arr[i*DIM+j]) 
             temp_arr[i*DIM+j] = T_fire;
     }}
     // switch pointers
@@ -53,8 +53,8 @@ void update_seq(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float
     *temp_arr0_ptr = temp_arr;
 }
 
-void update_omp(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float *y_arr, int DIM,
-    float T_fire){
+void update_omp(float **temp_arr_ptr, float **temp_arr0_ptr, bool *fire_arr,
+    float *x_arr, float *y_arr, int DIM, float T_fire){
     float *temp_arr = *temp_arr_ptr;
     float *temp_arr0 = *temp_arr0_ptr;
     #pragma omp parallel for
@@ -66,7 +66,7 @@ void update_omp(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float
         xs = temp_arr0[i*DIM+j-1];
         xd = temp_arr0[(i+1)*DIM+j];
         temp_arr[i*DIM+j] = (xw + xa + xs + xd) / 4;
-        if (is_fire(x_arr[i], y_arr[j])) 
+        if (fire_arr[i*DIM+j]) 
             temp_arr[i*DIM+j] = T_fire;
     }}
     // switch pointers
@@ -75,19 +75,61 @@ void update_omp(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float
 }
 
 typedef struct pthArgs{
-    int dim;
-    float *marr;
-    float *xarr;
-    float *xarr0;
-    float *dxarr;
-    float dt;
-    float G;
-    int N;
-    float cut;
-    int nt;
-    int idx;
+    float *temp_arr;
+    float *temp_arr0;
+    bool *fire_arr;
+    float *x_arr;
+    float *y_arr;
+    int DIM;
+    float T_fire;
+    int start_idx;
+    int end_idx;
     pthread_barrier_t *barr_ptr;
 } PthArgs;
+
+void *update_pth_callee(void *vargs){
+    PthArgs args = *(PthArgs *) vargs;
+    float *temp_arr = args.temp_arr;
+    float *temp_arr0 = args.temp_arr0;
+    bool *fire_arr = args.fire_arr;
+    float *x_arr = args.x_arr;
+    float *y_arr = args.y_arr;
+    int DIM = args.DIM;
+    float T_fire = args.T_fire;
+    int start_idx = args.start_idx;
+    int end_idx = args.end_idx;
+    for (int i = 1+start_idx; i < end_idx+1; i++){
+    for (int j = 1; j < DIM-1; j++){
+        float xw, xa, xs, xd; // w: up; a: left; s: down; d: right
+        xw = temp_arr0[i*DIM+j+1];
+        xa = temp_arr0[(i-1)*DIM+j];
+        xs = temp_arr0[i*DIM+j-1];
+        xd = temp_arr0[(i+1)*DIM+j];
+        temp_arr[i*DIM+j] = (xw + xa + xs + xd) / 4;
+        if (fire_arr[i*DIM+j]) 
+            temp_arr[i*DIM+j] = T_fire;
+    }}
+
+    return NULL;
+}
+
+void update_pth(float **temp_arr_ptr, float **temp_arr0_ptr, float *x_arr, float *y_arr,
+    int DIM, float T_fire, pthread_t *thread_arr, PthArgs *args_arr, int nt){
+    float *temp_arr = *temp_arr_ptr;
+    float *temp_arr0 = *temp_arr0_ptr;    
+
+    for (int i = 0; i < nt; i++){
+        int start_idx, end_idx;
+        partition(DIM-2, nt, i, &start_idx, &end_idx);
+        args_arr[i] = (PthArgs){.temp_arr=temp_arr, .temp_arr0=temp_arr0, .x_arr=x_arr, .y_arr=y_arr,
+            .DIM=DIM, .T_fire=T_fire, .start_idx=start_idx, .end_idx=end_idx};
+        pthread_create(&thread_arr[i], NULL, update_pth_callee, (void *)&args_arr[i]);
+    }
+
+    // switch array
+    *temp_arr_ptr = temp_arr0;
+    *temp_arr0_ptr = temp_arr;
+}
 
 void arr_check_if_identical(float *a, float *b, int dim){
     for (int i = 0; i < dim; i++){

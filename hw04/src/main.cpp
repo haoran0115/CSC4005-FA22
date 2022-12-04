@@ -25,6 +25,9 @@ void compute(){
             thread_arr, args_arr, nt);
         #elif CUDA
         update_cu(temp_arr0);
+        #ifdef GUI
+        copy_cu(temp_arr0);
+        #endif
         #else
         update_seq(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire); 
         #endif

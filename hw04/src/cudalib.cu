@@ -1,6 +1,6 @@
 #include "utils.cuh"
 #include "const.cuh"
-#define BLOCK_SIZE 1024
+#define BLOCK_SIZE 256
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -81,18 +81,72 @@ __global__ void update_cu_callee(float *temp_arr, float *temp_arr0, bool *fire_a
     }}
 }
 
+__global__ void update_cu_callee_shared(float *temp_arr, float *temp_arr0, bool *fire_arr,
+    float *x_arr, float *y_arr, int DIM, float T_fire){
+    // block partition
+    int block_start_idx, block_end_idx;
+    int size = gridDim.x;
+    int idx = blockIdx.x;
+    partition_d(DIM, size, idx, &block_start_idx, &block_end_idx);
+    // block-size shared memory
+    __shared__ float temp_u[BLOCK_SIZE]; // upper
+    __shared__ float temp_c[BLOCK_SIZE]; // current
+    __shared__ float temp_l[BLOCK_SIZE]; // lower
+    __shared__ float temp_r[BLOCK_SIZE]; // record
+    __shared__ bool  fire_c[BLOCK_SIZE]; // current fire
+    // tail case
+    float t_l, t_r;
+    // pre-initialize data
+    // main loop
+    for (int i = 1; i < DIM-1; i += BLOCK_SIZE){
+    for (int j = block_start_idx; j < block_end_idx; j++){
+    if (j!=0 && j!=DIM-1){
+        // load data
+        if (i+threadIdx.x < DIM){
+            temp_u[threadIdx.x] = temp_arr0[(j+1)*DIM+i+threadIdx.x];
+            temp_c[threadIdx.x] = temp_arr0[(j+0)*DIM+i+threadIdx.x];
+            temp_l[threadIdx.x] = temp_arr0[(j-1)*DIM+i+threadIdx.x];
+            fire_c[threadIdx.x] = fire_arr[(j+0)*DIM+i+threadIdx.x];
+        }
+        if (i+threadIdx.x<DIM-1 && i+threadIdx.x>0){
+            if (threadIdx.x==0) t_l = temp_arr0[(j+0)*DIM+i+threadIdx.x-1];
+            else if (threadIdx.x==BLOCK_SIZE-1) t_r = temp_arr0[(j+0)*DIM+i+threadIdx.x+1];
+        }
+        __syncthreads();
+
+        // main compute program
+        float xw, xa, xs, xd; // w: up; a: left; s: down; d: right
+        if (i+threadIdx.x<DIM-1 && i+threadIdx.x>0){
+            xw = temp_u[threadIdx.x];
+            xs = temp_l[threadIdx.x];
+            if (threadIdx.x==0){
+                xa = t_l;
+            } else xa = temp_c[threadIdx.x-1];
+            if (threadIdx.x==BLOCK_SIZE-1){
+                xd = t_r;
+            } else xd = temp_c[threadIdx.x+1];
+            temp_r[threadIdx.x] = (xw + xa + xs + xd) / 4;
+            // temp_r[threadIdx.x] = temp_c[threadIdx.x];
+            if (fire_c[threadIdx.x]) temp_r[threadIdx.x] = T_fire;
+        }
+        __syncthreads();
+
+        // copy data back
+        if (i+threadIdx.x<DIM-1 && i+threadIdx.x>0)
+            temp_arr[(j+0)*DIM+i+threadIdx.x] = temp_r[threadIdx.x];
+        __syncthreads();
+    }}}
+}
+
 __global__ void foo(float *arr, int DIM){
     for (int i = 0; i < DIM; i++)
         arr[i] = 0;
 }
 
 void update_cu(float *temp_arr){
-    update_cu_callee<<<4,4>>>(temp_arr_d, temp_arr0_d, fire_arr_d, 
+    // update_cu_callee<<<4,BLOCK_SIZE>>>(temp_arr_d, temp_arr0_d, fire_arr_d, 
+    update_cu_callee_shared<<<16,BLOCK_SIZE>>>(temp_arr_d, temp_arr0_d, fire_arr_d, 
         NULL, NULL, DIM_d, T_fire_d);
-    cudaDeviceSynchronize();
-
-    // copy data to host
-    gpuErrchk( cudaMemcpy(temp_arr, temp_arr_d, sizeof(float)*DIM_d*DIM_d, cudaMemcpyDeviceToHost) );
     cudaDeviceSynchronize();
 
     // switch pointers
@@ -101,6 +155,12 @@ void update_cu(float *temp_arr){
     temp_arr0_d = tmp;
 
     // synchronize
+    cudaDeviceSynchronize();
+}
+
+void copy_cu(float *temp_arr){
+    // copy data to host
+    gpuErrchk( cudaMemcpy(temp_arr, temp_arr0_d, sizeof(float)*DIM_d*DIM_d, cudaMemcpyDeviceToHost) );
     cudaDeviceSynchronize();
 }
 

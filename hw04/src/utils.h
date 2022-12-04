@@ -74,6 +74,29 @@ void update_omp(float **temp_arr_ptr, float **temp_arr0_ptr, bool *fire_arr,
     *temp_arr0_ptr = temp_arr;
 }
 
+void update_omp_part(float **temp_arr_ptr, float **temp_arr0_ptr, bool *fire_arr,
+    float *x_arr, float *y_arr, int DIM, float T_fire, int start_idx, int end_idx){
+    float *temp_arr = *temp_arr_ptr;
+    float *temp_arr0 = *temp_arr0_ptr;
+    #pragma omp parallel for
+    for (int i = start_idx; i < end_idx; i++){
+    for (int j = 1; j < DIM-1; j++){
+        if (i!=0 && i!=DIM-1){
+        float xw, xa, xs, xd; // w: up; a: left; s: down; d: right
+        xw = temp_arr0[i*DIM+j+1];
+        xa = temp_arr0[(i-1)*DIM+j];
+        xs = temp_arr0[i*DIM+j-1];
+        xd = temp_arr0[(i+1)*DIM+j];
+        temp_arr[i*DIM+j] = (xw + xa + xs + xd) / 4;
+        if (fire_arr[i*DIM+j]) 
+            temp_arr[i*DIM+j] = T_fire;
+        }
+    }}
+    // switch pointers
+    *temp_arr_ptr = temp_arr0;
+    *temp_arr0_ptr = temp_arr;
+}
+
 typedef struct pthArgs{
     float *temp_arr;
     float *temp_arr0;

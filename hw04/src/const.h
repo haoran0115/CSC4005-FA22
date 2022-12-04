@@ -23,6 +23,7 @@ int nsteps = 100;
 // IO & runtime options
 int record = 0;
 int nt = 1;
+char type[1000];
 
 // pthread parameters
 pthread_t *thread_arr = NULL;

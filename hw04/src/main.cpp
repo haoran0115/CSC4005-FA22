@@ -11,8 +11,6 @@
 #include "const.h"
 
 void compute(){
-    // running type buffer
-    char type[1000];
     // start timing
     auto t0 = std::chrono::high_resolution_clock::now();
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -21,7 +19,7 @@ void compute(){
     for (int s = 0; s < nsteps; s++){
         // main compute program
         #ifdef OMP
-        update_omp(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire); 
+        update_omp(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire);
         #elif PTH
         update_pth(&temp_arr, &temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire,
             thread_arr, args_arr, nt);
@@ -51,6 +49,14 @@ void compute(){
         glFlush();
         glutSwapBuffers();
         #endif
+    }
+
+    // record data
+    if (record==1){
+        t2 = std::chrono::high_resolution_clock::now();
+        t = std::chrono::duration_cast<std::chrono::duration<double>>(t2-t0).count();
+        double fps = nsteps / t;
+        runtime_record(type, DIM, size, fps);
     }
 }
 
@@ -85,6 +91,9 @@ int main(int argc, char *argv[]){
         }
     }
 
+    // print info
+    print_info(DIM, nsteps);
+
     // initialization
     temp_arr = (float *)malloc(sizeof(float)*DIM*DIM);
     temp_arr0 = (float *)malloc(sizeof(float)*DIM*DIM);
@@ -115,23 +124,20 @@ int main(int argc, char *argv[]){
     memcpy(temp_arr0, temp_arr, sizeof(float)*DIM*DIM);
 
     #ifdef OMP
+    strcpy(type, "omp");
     omp_set_num_threads(nt);
     #elif PTH
+    strcpy(type, "pth");
     thread_arr = (pthread_t *)malloc(sizeof(pthread_t)*nt);
     args_arr = (PthArgs *)malloc(sizeof(PthArgs)*nt);
     #elif CUDA
+    strcpy(type, "cuda");
     initialize_cu(temp_arr, temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire,
         Tx, Ty);
+    #else
+    strcpy(type, "seq");
     #endif
     
-    // // check arr status
-    // print_arr(x_arr, DIM);
-    // print_arr(y_arr, DIM);
-    // print_arr(temp_arr, DIM*DIM);
-
-    // print info
-    print_info(DIM, nsteps);
-
     // main program
     #ifdef GUI
     glutInit(&argc, argv);

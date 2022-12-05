@@ -11,7 +11,7 @@
 
 void compute(){
     // running type buffer
-    char type[1000] = "mpi";
+    strcpy(type, "mpi");
     // start timing
     auto t0 = std::chrono::high_resolution_clock::now();
     auto t1 = std::chrono::high_resolution_clock::now();

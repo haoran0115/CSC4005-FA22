@@ -9,6 +9,7 @@
 #include "gui.h"
 #endif
 #include "const.h"
+#include <thread>
 
 void compute(){
     // start timing
@@ -51,6 +52,8 @@ void compute(){
         glDrawPixels(RES, RES, GL_RGB, GL_UNSIGNED_BYTE, pix);
         glFlush();
         glutSwapBuffers();
+        // glFinish();
+        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
         #endif
     }
 
@@ -129,16 +132,19 @@ int main(int argc, char *argv[]){
     #ifdef OMP
     strcpy(type, "omp");
     omp_set_num_threads(nt);
+    size = nt;
     #elif PTH
     strcpy(type, "pth");
     thread_arr = (pthread_t *)malloc(sizeof(pthread_t)*nt);
     args_arr = (PthArgs *)malloc(sizeof(PthArgs)*nt);
+    size = nt;
     #elif CUDA
     strcpy(type, "cuda");
     initialize_cu(temp_arr, temp_arr0, fire_arr, x_arr, y_arr, DIM, T_fire,
         Tx, Ty);
     #else
     strcpy(type, "seq");
+    size = 1;
     #endif
     
     // main program
@@ -165,8 +171,6 @@ int main(int argc, char *argv[]){
     free(y_arr);
 
     #ifdef PTH
-    for (int i = 0; i < nt; i++)
-        pthread_join(thread_arr[i], NULL);
     free(args_arr);
     free(thread_arr);
     #elif CUDA

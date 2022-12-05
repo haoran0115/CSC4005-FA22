@@ -149,6 +149,8 @@ void update_pth(float **temp_arr_ptr, float **temp_arr0_ptr, bool *fire_arr, flo
         pthread_create(&thread_arr[i], NULL, update_pth_callee, (void *)&args_arr[i]);
     }
 
+    for (int i = 0; i < nt; i++) pthread_join(thread_arr[i], NULL);
+
     // switch array
     *temp_arr_ptr = temp_arr0;
     *temp_arr0_ptr = temp_arr;

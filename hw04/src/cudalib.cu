@@ -1,6 +1,6 @@
 #include "utils.cuh"
 #include "const.cuh"
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 1024
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -145,7 +145,7 @@ __global__ void foo(float *arr, int DIM){
 
 void update_cu(float *temp_arr){
     // update_cu_callee<<<4,BLOCK_SIZE>>>(temp_arr_d, temp_arr0_d, fire_arr_d, 
-    update_cu_callee_shared<<<16,BLOCK_SIZE>>>(temp_arr_d, temp_arr0_d, fire_arr_d, 
+    update_cu_callee_shared<<<32,BLOCK_SIZE>>>(temp_arr_d, temp_arr0_d, fire_arr_d, 
         NULL, NULL, DIM_d, T_fire_d);
     cudaDeviceSynchronize();
 
